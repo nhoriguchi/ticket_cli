@@ -1,0 +1,8 @@
+{
+  "type": "openproject",
+  "token": "",
+  "cacheDir": "/tmp/openproject1",
+  "baseport": "80",
+  "baseurl": "nhoriguchi-openproject.japaneast.cloudapp.azure.com",
+  "baseapi": "/api/v3/work_packages"
+}
