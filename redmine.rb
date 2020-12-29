@@ -1,51 +1,29 @@
 # coding: utf-8
-# チケットサーバが Redmine 場合に固有のコードを実装する。
 
 require 'net/http'
 require 'fileutils'
 
+require_relative "./redmine/list.rb"
+require_relative "./redmine/show.rb"
+require_relative "./redmine/edit.rb"
+
 class Redmine
-  def initialize args
-    @config = args
-    if @config["baseport"].to_i == 443
-      @baseurl = "https://" + @config["baseurl"]
+  include RedmineCmdList
+  include RedmineCmdShow
+  include RedmineCmdEdit
+
+  def initialize options
+    @options = options
+
+    if @options["baseport"].to_i == 443
+      @baseurl = "https://" + @options["baseurl"]
     else
-      @baseurl = "http://" + @config["baseurl"]
+      @baseurl = "http://" + @options["baseurl"]
     end
 
     @cacheData = updateCache
-  end
-
-  def list    
-    # raise
-    keys = @cacheData.keys.sort {|a, b| b.to_i <=> a.to_i}
-    keys.each do |k|
-      c = @cacheData[k]
-      printf "%-4d %3d %-10s %-14s (%s) %s\n", k, c["done_ratio"], c["tracker"]["name"], c["status"]["name"], c["project"]["name"], c["subject"]
-    end
-  end
-
-  def show id
-    raise "issue #{id} not found" if @cacheData[id].nil?
-    tmp = draftData id
-    puts tmp.join("\n")
-  end
-
-  def edit id
-    raise "issue #{id} not found" if @cacheData[id].nil?
-    tmp = draftData id
-    puts tmp.join("\n")
-
-    editDir = "#{@config["cacheDir"]}/edit"
-    FileUtils.mkdir_p(editDir)
-    draftFile = "#{editDir}/#{id}.md"
-    File.write(draftFile, tmp.join("\n"))
-    
-    # system "#{ENV["EDITOR"]} #{draftFile}"
-
-    # TODO: check diff
-
-    parseDraftData draftFile
+    # TODO: update metadata only when unknown key is found in ticket cache
+    @metaCacheData = updateMetaCache
   end
 
   def tree
@@ -76,8 +54,47 @@ class Redmine
         afterDescription << line
       end
     end
-    pp afterMeta
-    pp afterDescription
+
+    res = {"issue" => {}}
+    res["issue"]["description"] = afterDescription.join("\n")
+
+    afterMeta.each do |line|
+      case line
+      when /^id:\s*(.*?)\s*$/i
+      when /^progress:\s*(.*?)\s*$/i
+        res["issue"]["done_ratio"] = $1.to_i
+      when /^status:\s*(.*?)\s*$/i
+        tmp = @metaCacheData["issue_statuses"].find {|a| a["name"].downcase == $1.downcase}
+        res["issue"]["status_id"] = tmp["id"] if tmp
+      when /^subject:\s*(.*?)\s*$/i
+        res["issue"]["subject"] = $1
+      when /^project:\s*(.*?)\s*$/i
+        tmp = @metaCacheData["projects"].find {|a| a["name"].downcase == $1.downcase}
+        res["issue"]["project_id"] = tmp["id"] if tmp
+      when /^type:\s*(.*?)\s*$/i
+        tmp = @metaCacheData["trackers"].find {|a| a["name"].downcase == $1.downcase}
+        res["issue"]["tracker_id"] = tmp["id"] if tmp
+      when /^priority:\s*(.*?)\s*$/i
+        tmp = @metaCacheData["issue_priorities"].find {|a| a["name"].downcase == $1.downcase}
+        res["issue"]["priority_id"] = tmp["id"] if tmp
+      when /^estimatedtime:\s*(.*?)\s*$/i
+        res["issue"]["estimated_hours"] = $1.to_i
+      when /^startdate:\s*(.*?)\s*$/i
+        res["issue"]["start_date"] = $1 == "" ? nil : $1
+      when /^duedate:\s*(.*?)\s*$/i
+        res["issue"]["due_date"] = $1 == "" ? nil : $1
+      when /^parent:\s*(.*?)\s*$/i
+        res["issue"]["parent_issue_id"] = $1 == "null" ? nil : $1.to_i
+      else
+        raise "invalid metadata line #{line}"
+      end
+    end
+
+    if metaline != 2
+      raise "draft file is broken (should have two '---' separator lines), abort."
+    end
+
+    return res
   end
 
   def draftData id
@@ -95,7 +112,8 @@ class Redmine
     dueDate = tmp["due_date"]
     parent = tmp["parent"].nil? ? "null" : tmp["parent"]["id"]
 
-    editdata = ["---"]
+    editdata = []
+    editdata << "---"
     editdata << "ID: #{id}"
     editdata << "Progress: #{progress}"
     editdata << "Status: #{status}"
@@ -107,7 +125,7 @@ class Redmine
     editdata << "StartDate: #{startDate}"
     editdata << "DueDate: #{dueDate}"
     editdata << "Parent: #{parent}"
-    editdata << ["---"]
+    editdata << "---"
     editdata << description.gsub(/\r\n?/, "\n")
 
     return editdata
@@ -115,18 +133,29 @@ class Redmine
 
   # update cache contents
   def updateCache
-    cacheFile = @config["cacheDir"] + "/cacheData"
+    cacheFile = @options["cacheDir"] + "/cacheData"
     if FileTest.exist? cacheFile
       cacheData = JSON.parse(File.read(cacheFile))
       cacheData, updated = updateLatestCache(cacheData)
       return cacheData if updated
     else
-      FileUtils.mkdir_p(@config["cacheDir"])
+      FileUtils.mkdir_p(@options["cacheDir"])
       cacheData = createFullCache
     end
 
     File.write(cacheFile, cacheData.to_json)
     return cacheData
+  end
+
+  def updateCacheIssue id
+    params = {
+      "issue_id" => id,
+      "include" => "relations,attachments",
+      "status_id" => "*",
+      "key" => @options["token"]
+    }
+
+    __get_response "#{@baseurl}/issues.json", params
   end
 
   def updateLatestCache cacheData
@@ -141,7 +170,7 @@ class Redmine
       "sort" => "updated_on:desc",
       "limit" => 100,
       "updated_on" => ">=#{max}",
-      "key" => @config["token"]
+      "key" => @options["token"]
     }
 
     issueAPI = "#{@baseurl}/issues.json"
@@ -161,7 +190,7 @@ class Redmine
       "include" => "relations,attachments",
       "sort" => "updated_on:desc",
       "limit" => 100,
-      "key" => @config["token"]
+      "key" => @options["token"]
     }
 
     issueAPI = "#{@baseurl}/issues.json"
@@ -177,7 +206,23 @@ class Redmine
   def __get_response api, params
     uri = URI(api)
     uri.query = URI.encode_www_form(params)
-    response = Net::HTTP.get_response(uri)
+
+    response = nil
+    if @options["baseport"].to_i == 443
+      require 'openssl'
+      verify = OpenSSL::SSL::VERIFY_PEER
+      verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
+
+      Net::HTTP.start(uri.host, uri.port,
+                      :use_ssl => uri.scheme == 'https',
+                      :verify_mode => verify) do |http|
+        request = Net::HTTP::Get.new uri
+        response = http.request request
+      end
+    else # for http connection
+      response = Net::HTTP.get_response(uri)
+    end
+
     raise "http request failed." if response.code != "200"
     return JSON.load(response.body)
   end
@@ -197,5 +242,46 @@ class Redmine
       end
     end
     return issues
+  end
+
+  def updateMetaCache
+    metaCacheFile = @options["cacheDir"] + "/metaCacheData"
+    if FileTest.exist? metaCacheFile
+      metaCacheData = JSON.parse(File.read(metaCacheFile))
+    else
+      FileUtils.mkdir_p(@options["cacheDir"])
+      metaCacheData = createMetaCache
+      # TODO: persist metadata cache after implementing update detection
+      # File.write(metaCacheFile, metaCacheData.to_json)
+    end
+
+    return metaCacheData
+  end
+
+  def createMetaCache
+    params = {
+      "limit" => 100,
+      "key" => @options["token"]
+    }
+
+    metaCacheData = {}
+    a = __get_response "#{@baseurl}/projects.json", params
+    metaCacheData["projects"] = a["projects"]
+
+    a = __get_response "#{@baseurl}/enumerations/issue_priorities.json", params
+    metaCacheData["issue_priorities"] = a["issue_priorities"]
+
+    a = __get_response "#{@baseurl}/trackers.json", params
+    metaCacheData["trackers"] = a["trackers"]
+
+    a = __get_response "#{@baseurl}/users.json", params
+    metaCacheData["users"] = a["users"]
+
+    a = __get_response "#{@baseurl}/issue_statuses.json", params
+    metaCacheData["issue_statuses"] = a["issue_statuses"]
+
+    # TODO: category and version as project-specific data
+
+    return metaCacheData
   end
 end

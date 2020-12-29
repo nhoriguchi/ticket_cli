@@ -5,9 +5,12 @@
 # であり、これに対応していれば最低限の作業は可能である。
 # 想定対象としては redmine, openproject, gist, rocketchat, teams など。
 
+# TODO
+# - draft 関連のハンドリングの部分はサーバー非依存にしたい。
+
 require 'pp'
 require 'json'
-
+require 'optparse'
 
 class MainCommand
   @@basedir = "/home/hori/hack/ticket"
@@ -18,29 +21,44 @@ class MainCommand
     configPath = [@@basedir, @@config].join("/")
     tmp = JSON.parse(File.read(configPath))
 
-    cmd = args[0]
+    @options = {
+      :insecure => false,
+      :debug => false
+    }
+    @options.merge! tmp
+
+    @options[:insecure] = true if ENV['INSECURE']
+    @options[:debug] = true if ENV['DEBUG']
+
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$0} [-options] subcommand"
+      opts.on("-S", "--insecure") do
+        @options[:insecure] = true
+      end
+      opts.on("-D", "--debug") do
+        @options[:debug] = true
+      end
+    end.order! args
+
+    cmd = args.shift
 
     case tmp["type"]
     when "redmine"
       require_relative "./redmine.rb"
-      redmine = Redmine.new tmp
+
+      redmine = Redmine.new @options
       if cmd == "list"
-        redmine.list
+        redmine.list args
       elsif cmd == "show"
-        if args[1]
-          redmine.show args[1]
-        else
-          puts "help"
-        end
+        redmine.show args
       elsif cmd == "edit"
-        if args[1]
-          redmine.edit args[1]
-        else
-          puts "help"
-        end
+        redmine.edit args
       elsif cmd == "config"
+        redmine.config args
       elsif cmd == "new"
+        redmine.new args
       elsif cmd == "attach"
+        redmine.attach args
       else
         puts "help"
       end
