@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'openssl'
+require 'json'
 
 module RedmineConnection
   private
@@ -22,7 +23,10 @@ module RedmineConnection
         response = http.request request
       end
     else # for http connection
-      response = Net::HTTP.get_response(uri)
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        request = Net::HTTP::Get.new uri
+        response = http.request request
+      end
     end
 
     raise "http request failed." if response.code != "200"
@@ -56,12 +60,18 @@ module RedmineConnection
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Put.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @options["token"]
+        request["X-Redmine-API-Key"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
     else
-      raise "no http connection supported"
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        request = Net::HTTP::Put.new(uri.to_s)
+        request.set_content_type("application/json")
+        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request.body = data.to_json
+        response = http.request request
+      end
     end
   end
 
@@ -75,12 +85,18 @@ module RedmineConnection
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Post.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @options["token"]
+        request["X-Redmine-API-Key"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
     else
-      raise "no http connection supported"
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        request = Net::HTTP::Post.new(uri.to_s)
+        request.set_content_type("application/json")
+        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request.body = data.to_json
+        response = http.request request
+      end
     end
   end
 end

@@ -20,11 +20,13 @@ class Redmine
 
   def initialize options
     @options = options
+    @serverconf = @options['servers'][@options[:server]]
+    # pp @serverconf
 
     if @options["baseport"].to_i == 443
-      @baseurl = "https://" + @options["baseurl"]
+      @baseurl = "https://#{@serverconf["baseurl"]}/#{@serverconf["baseapi"]}"
     else
-      @baseurl = "http://" + @options["baseurl"]
+      @baseurl = "https://#{@serverconf["baseurl"]}:#{@serverconf["baseport"]}/#{@serverconf["baseapi"]}"
     end
 
     @cacheData = updateCache

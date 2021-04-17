@@ -4,51 +4,64 @@ module RedmineCmdEdit
   def edit args
     id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
-    a = updateCacheIssue id
-    @cacheData[id] = a["issues"][0]
-    tmp = draftData id
+    updateCacheIssue id
 
-    editDir = "#{@options["cacheDir"]}/edit"
+    # TODO: move to proper place
+    editDir = "#{@options["cachedir"]}/edit"
     FileUtils.mkdir_p(editDir)
-    draftFile = "#{editDir}/#{id}.md"
-    draftFileOrig = "#{editDir}/.#{id}.md"
-    File.write(draftFile, tmp.join("\n"))
+    extension = @serverconf["format"]
+    draftFile = "#{editDir}/#{id}.#{extension}"
+    draftFileOrig = "#{editDir}/.#{id}.#{extension}"
+    draftFileBackup = "#{editDir}/.#{id}.backup.#{extension}"
+    File.write(draftFile, draftData(id).join("\n"))
 
     # TODO: update metadata cache asynchronously here
     # TODO: calculate duration of editing
     # TODO: ask yes/no or progress update
+    # TODO: conflict check
+    # TODO: save edited draft when upload failed
 
-    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile}"
+    t1 = Time.now
+    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile} ; cp #{draftFile} #{draftFileBackup}"
     ret = system("diff #{draftFile} #{draftFileOrig} > /dev/null")
     if ret == true
       puts "no change on draft file."
       return
     end
-
-    t1 = Time.now
-    updateData = parseDraftData draftFile
     t2 = Time.now
 
+    uploadData, duration = parseDraftData draftFile
+    uploadIssue id, uploadData
+
+    duration = ((t2 - t1).to_i / 60) if duration.nil?
+    createTimeEntry id, duration
+  end
+
+  def uploadIssue id, draftData
     uri = URI("#{@baseurl}/issues/#{id}.json")
-    response = put_issue uri, updateData
+    response = put_issue uri, draftData
 
     case response
     when Net::HTTPSuccess, Net::HTTPRedirection
-      puts "OK"
+      puts "upload done"
     else
       raise response.value
     end
+  end
 
-    duration = (t2 - t1).to_i
-    if duration >= 300
-      min = duration % 3600 / 60
-      hour = duration / 3600 / 60
+  private
+
+  # TODO: support adding comments
+  def createTimeEntry id, duration
+    if duration >= 5
+      min = duration % 60
+      hour = duration / 60
 
       tmpjson = {
         "time_entry" => {
           "issue_id" => id,
           "hours" => "%d:%02d" % [hour, min],
-          "comments" => "test"
+          "comments" => ""
         }
       }
 
@@ -56,18 +69,11 @@ module RedmineCmdEdit
       response = post_time_entry uri, tmpjson
       case response
       when Net::HTTPSuccess, Net::HTTPRedirection
-        puts "OK"
+        puts "create time entry done"
       else
         raise response.value
       end
     end
-
-    @cacheData = updateCache
-  end
-
-  private
-
-  def createTimeEntry
   end
 
   def parseDraftData draftFile
@@ -97,6 +103,8 @@ module RedmineCmdEdit
     res = {"issue" => {}}
     res["issue"]["description"] = afterDescription.join("\n")
 
+    duration = nil
+
     afterMeta.each do |line|
       case line
       when /^id:\s*(.*?)\s*$/i
@@ -124,6 +132,13 @@ module RedmineCmdEdit
         res["issue"]["due_date"] = $1 == "" ? nil : $1
       when /^parent:\s*(.*?)\s*$/i
         res["issue"]["parent_issue_id"] = $1 == "null" ? nil : $1.to_i
+      when /^duration:\s*(.*?)\s*$/i
+        tmp = $1
+        if tmp =~ /(\d+):(\d{2})/
+          duration = $1.to_i * 60 + $2.to_i
+        else
+          duration = tmp.to_i
+        end
       else
         raise "invalid metadata line #{line}"
       end
@@ -133,7 +148,7 @@ module RedmineCmdEdit
       raise "draft file is broken (should have two '---' separator lines), abort."
     end
 
-    return res
+    return res, duration
   end
 
   def draftData id
@@ -164,6 +179,7 @@ module RedmineCmdEdit
     editdata << "StartDate: #{startDate}"
     editdata << "DueDate: #{dueDate}"
     editdata << "Parent: #{parent}"
+    editdata << "Duration:"
     editdata << "---"
     editdata << description.gsub(/\r\n?/, "\n")
 

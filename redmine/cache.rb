@@ -5,13 +5,13 @@ module RedmineCache
 
   # update cache contents
   def updateCache
-    cacheFile = @options["cacheDir"] + "/cacheData"
+    cacheFile = @options["cachedir"] + "/cacheData"
     if FileTest.exist? cacheFile
       cacheData = JSON.parse(File.read(cacheFile))
       cacheData, updated = updateLatestCache(cacheData)
       return cacheData if updated
     else
-      FileUtils.mkdir_p(@options["cacheDir"])
+      FileUtils.mkdir_p(@options["cachedir"])
       cacheData = createFullCache
     end
 
@@ -24,10 +24,11 @@ module RedmineCache
       "issue_id" => id,
       "include" => "relations,attachments",
       "status_id" => "*",
-      "key" => @options["token"]
+      "key" => @serverconf["token"]
     }
 
-    __get_response "#{@baseurl}/issues.json", params
+    response = __get_response "#{@baseurl}/issues.json", params
+    @cacheData[id] = response["issues"][0]
   end
 
   def updateLatestCache cacheData
@@ -42,7 +43,7 @@ module RedmineCache
       "sort" => "updated_on:desc",
       "limit" => 100,
       "updated_on" => ">=#{max}",
-      "key" => @options["token"]
+      "key" => @serverconf["token"]
     }
 
     issueAPI = "#{@baseurl}/issues.json"
@@ -62,10 +63,12 @@ module RedmineCache
       "include" => "relations,attachments",
       "sort" => "updated_on:desc",
       "limit" => 100,
-      "key" => @options["token"]
+      "key" => @serverconf["token"]
     }
 
     issueAPI = "#{@baseurl}/issues.json"
+    pp params
+    pp @baseurl
     issues = __get_response_all issueAPI, params
 
     cacheData = {}
@@ -76,23 +79,25 @@ module RedmineCache
   end
 
   def updateMetaCache
-    metaCacheFile = @options["cacheDir"] + "/metaCacheData"
+    metaCacheFile = @options["cachedir"] + "/metaCacheData"
     if FileTest.exist? metaCacheFile
       metaCacheData = JSON.parse(File.read(metaCacheFile))
+      return metaCacheData
     else
-      FileUtils.mkdir_p(@options["cacheDir"])
+      FileUtils.mkdir_p(@options["cachedir"])
       metaCacheData = createMetaCache
       # TODO: persist metadata cache after implementing update detection
       # File.write(metaCacheFile, metaCacheData.to_json)
     end
 
+    File.write(metaCacheFile, metaCacheData.to_json)
     return metaCacheData
   end
 
   def createMetaCache
     params = {
       "limit" => 100,
-      "key" => @options["token"]
+      "key" => @serverconf["token"]
     }
 
     metaCacheData = {}
@@ -105,14 +110,30 @@ module RedmineCache
     a = __get_response "#{@baseurl}/trackers.json", params
     metaCacheData["trackers"] = a["trackers"]
 
-    a = __get_response "#{@baseurl}/users.json", params
-    metaCacheData["users"] = a["users"]
+    if @serverconf["role"] == "admin"
+      a = __get_response "#{@baseurl}/users.json", params
+      metaCacheData["users"] = a["users"]
+    end
 
     a = __get_response "#{@baseurl}/issue_statuses.json", params
     metaCacheData["issue_statuses"] = a["issue_statuses"]
 
     # TODO: category and version as project-specific data
-
     return metaCacheData
+  end
+
+  def is_status_closed status
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] == status}
+    tmp["is_closed"]
+  end
+
+  def tracker_name_to_id tracker
+    tmp = @metaCacheData["trackers"].find {|elm| elm["name"] == tracker}
+    tmp["id"]
+  end
+
+  def status_name_to_id status
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] == status}
+    tmp["id"]
   end
 end

@@ -9,29 +9,31 @@
 # - draft 関連のハンドリングの部分はサーバー非依存にしたい。
 
 require 'pp'
-require 'json'
+require 'yaml'
 require 'optparse'
 
 class MainCommand
-  @@basedir = "/home/hori/hack/ticket"
-  @@config = "config/redmine1.json"
+  @@config = "#{ENV['HOME']}/.ticket/config"
 
   def self.cmd args
-
-    configPath = [@@basedir, @@config].join("/")
-    tmp = JSON.parse(File.read(configPath))
+    tmp = YAML.load_file(@@config)
 
     @options = {
+      :server => tmp['defaultserver'],
       :insecure => false,
-      :debug => false
+      :debug => false,
     }
     @options.merge! tmp
 
+    @options[:server] = ENV['SERVER'] if ENV['SERVER']
     @options[:insecure] = true if ENV['INSECURE']
     @options[:debug] = true if ENV['DEBUG']
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$0} [-options] subcommand"
+      opts.on("-s <server>", "--server") do |s|
+        @options[:server] = s
+      end
       opts.on("-S", "--insecure") do
         @options[:insecure] = true
       end
@@ -42,7 +44,8 @@ class MainCommand
 
     cmd = args.shift
 
-    case tmp["type"]
+    @options["cachedir"] += "/#{@options[:server]}"
+    case tmp["servers"][@options[:server]]["type"]
     when "redmine"
       require_relative "./redmine.rb"
 
