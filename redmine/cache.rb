@@ -9,7 +9,7 @@ module RedmineCache
     if FileTest.exist? cacheFile
       cacheData = JSON.parse(File.read(cacheFile))
       cacheData, updated = updateLatestCache(cacheData)
-      return cacheData if updated
+      return cacheData if updated == false
     else
       FileUtils.mkdir_p(@options["cachedir"])
       cacheData = createFullCache
@@ -42,19 +42,19 @@ module RedmineCache
       "include" => "relations,attachments",
       "sort" => "updated_on:desc",
       "limit" => 100,
-      "updated_on" => ">=#{max}",
+      "updated_on" => "><#{max}",
       "key" => @serverconf["token"]
     }
 
     issueAPI = "#{@baseurl}/issues.json"
     issues = __get_response_all issueAPI, params
 
-    return cacheData, true if issues.size <= 1
+    return cacheData, false if issues.size < 1
 
     issues.each do |issue|
-      cacheData[issue["id"]] = issue
+      cacheData[issue["id"].to_s] = issue
     end
-    return cacheData, false
+    return cacheData, true
   end
 
   def createFullCache
@@ -67,8 +67,6 @@ module RedmineCache
     }
 
     issueAPI = "#{@baseurl}/issues.json"
-    pp params
-    pp @baseurl
     issues = __get_response_all issueAPI, params
 
     cacheData = {}

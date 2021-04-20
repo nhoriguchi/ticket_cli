@@ -3,6 +3,8 @@
 require 'net/http'
 require 'fileutils'
 
+require_relative "./common/draft.rb"
+
 require_relative "./redmine/cache.rb"
 require_relative "./redmine/connection.rb"
 
@@ -11,6 +13,8 @@ require_relative "./redmine/show.rb"
 require_relative "./redmine/edit.rb"
 
 class Redmine
+  include Common
+
   include RedmineCache
   include RedmineConnection
 
@@ -26,12 +30,14 @@ class Redmine
     if @options["baseport"].to_i == 443
       @baseurl = "https://#{@serverconf["baseurl"]}/#{@serverconf["baseapi"]}"
     else
-      @baseurl = "https://#{@serverconf["baseurl"]}:#{@serverconf["baseport"]}/#{@serverconf["baseapi"]}"
+      @baseurl = "http://#{@serverconf["baseurl"]}:#{@serverconf["baseport"]}/#{@serverconf["baseapi"]}"
     end
 
     @cacheData = updateCache
+    puts "cache update done"
     # TODO: update metadata only when unknown key is found in ticket cache
     @metaCacheData = updateMetaCache
+    puts "metacache update done"
   end
 
   def tree

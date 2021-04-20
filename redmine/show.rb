@@ -1,11 +1,25 @@
 # coding: utf-8
 
 module RedmineCmdShow
-  def show id
+  def show args
+    journal = false
+
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$0} [-options] id"
+      opts.on("-j", "--journal") do
+        journal = true
+      end
+    end.order! args
+
+    id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
-    a = updateCacheIssue id
-    @cacheData[id] = a["issues"][0]
-    tmp = draftData id
-    puts tmp.join("\n")
+    updateCacheIssue id
+
+    # borrowed from RedmineCmdEdit
+    puts draftData(id)
+
+    if journal == true
+      puts "=========== TODO: JOURNAL SHOULD BE DISPLAYED ============"
+    end
   end
 end

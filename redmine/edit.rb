@@ -2,31 +2,44 @@
 
 module RedmineCmdEdit
   def edit args
+    allyes = false
+
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$0} [-options] id"
+      opts.on("--all-yes") do
+        allyes = true
+      end
+    end.order! args
+
     id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
     updateCacheIssue id
 
-    # TODO: move to proper place
-    editDir = "#{@options["cachedir"]}/edit"
-    FileUtils.mkdir_p(editDir)
-    extension = @serverconf["format"]
-    draftFile = "#{editDir}/#{id}.#{extension}"
-    draftFileOrig = "#{editDir}/.#{id}.#{extension}"
-    draftFileBackup = "#{editDir}/.#{id}.backup.#{extension}"
-    File.write(draftFile, draftData(id).join("\n"))
+    draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
+    prepareDraft draftFile, draftData(id).join("\n")
 
     # TODO: update metadata cache asynchronously here
-    # TODO: calculate duration of editing
-    # TODO: ask yes/no or progress update
-    # TODO: conflict check
-    # TODO: save edited draft when upload failed
 
     t1 = Time.now
-    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile} ; cp #{draftFile} #{draftFileBackup}"
-    ret = system("diff #{draftFile} #{draftFileOrig} > /dev/null")
-    if ret == true
-      puts "no change on draft file."
-      return
+    while true
+      updated = editDraft draftFile
+      return if updated == false
+
+      # TODO: conflict check
+
+      if allyes == true
+        break
+      else
+        puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
+        input = STDIN.gets.chomp
+        if input[0] == 'n' or input[0] == 'N' or input[0] == 's' or input[0] == 'S'
+          return
+        elsif input[0] == 'e' or input[0] == 'E'
+          true
+        elsif input[0] == 'y' or input[0] == 'Y'
+          break
+        end
+      end
     end
     t2 = Time.now
 
@@ -35,6 +48,9 @@ module RedmineCmdEdit
 
     duration = ((t2 - t1).to_i / 60) if duration.nil?
     createTimeEntry id, duration
+
+    # update succeeded so clean up draft files
+    cleanupDraft draftFile
   end
 
   def uploadIssue id, draftData

@@ -24,7 +24,7 @@ module RedmineConnection
       end
     else # for http connection
       Net::HTTP.start(uri.host, uri.port) do |http|
-        request = Net::HTTP::Get.new uri
+        request = Net::HTTP::Get.new(uri.to_s)
         response = http.request request
       end
     end
