@@ -49,22 +49,7 @@ class MainCommand
     when "redmine"
       require_relative "./redmine.rb"
 
-      redmine = Redmine.new @options
-      if cmd == "list"
-        redmine.list args
-      elsif cmd == "show"
-        redmine.show args
-      elsif cmd == "edit"
-        redmine.edit args
-      elsif cmd == "config"
-        redmine.config args
-      elsif cmd == "new"
-        redmine.new args
-      elsif cmd == "attach"
-        redmine.attach args
-      else
-        puts "help"
-      end
+      redmine = Redmine.new @options, cmd, args
     else
       raise "invalid config #{tmp}"
     end

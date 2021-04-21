@@ -22,7 +22,7 @@ class Redmine
   include RedmineCmdShow
   include RedmineCmdEdit
 
-  def initialize options
+  def initialize options, cmd, args
     @options = options
     @serverconf = @options['servers'][@options[:server]]
     # pp @serverconf
@@ -38,6 +38,22 @@ class Redmine
     # TODO: update metadata only when unknown key is found in ticket cache
     @metaCacheData = updateMetaCache
     puts "metacache update done"
+
+    if cmd == "list"
+      list args
+    elsif cmd == "show"
+      show args
+    elsif cmd == "edit"
+      edit args
+    elsif cmd == "config"
+      config args
+    elsif cmd == "new"
+      new args
+    elsif cmd == "attach"
+      attach args
+    else
+      puts "help"
+    end
   end
 
   def tree

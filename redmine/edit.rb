@@ -21,9 +21,9 @@ module RedmineCmdEdit
     # TODO: update metadata cache asynchronously here
 
     t1 = Time.now
+    updated = false
     while true
       updated = editDraft draftFile
-      return if updated == false
 
       # TODO: conflict check
 
@@ -43,8 +43,10 @@ module RedmineCmdEdit
     end
     t2 = Time.now
 
-    uploadData, duration = parseDraftData draftFile
-    uploadIssue id, uploadData
+    if updated == true
+      uploadData, duration = parseDraftData draftFile
+      uploadIssue id, uploadData
+    end
 
     duration = ((t2 - t1).to_i / 60) if duration.nil?
     createTimeEntry id, duration
