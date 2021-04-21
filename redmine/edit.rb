@@ -1,5 +1,7 @@
 # coding: utf-8
 
+require 'differ'
+
 module RedmineCmdEdit
   def edit args
     allyes = false
@@ -15,6 +17,8 @@ module RedmineCmdEdit
     raise "issue #{id} not found" if @cacheData[id].nil?
     updateCacheIssue id
 
+    @issueOrigin = @cacheData[id]
+
     draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
     prepareDraft draftFile, draftData(id).join("\n")
 
@@ -25,8 +29,6 @@ module RedmineCmdEdit
     while true
       updated = editDraft draftFile
 
-      # TODO: conflict check
-
       if allyes == true
         break
       else
@@ -34,25 +36,65 @@ module RedmineCmdEdit
         input = STDIN.gets.chomp
         if input[0] == 'n' or input[0] == 'N' or input[0] == 's' or input[0] == 'S'
           return
-        elsif input[0] == 'e' or input[0] == 'E'
-          true
         elsif input[0] == 'y' or input[0] == 'Y'
-          break
+          true
+        else
+          next
         end
       end
+
+      break if updated == false
+
+      uploadData, duration = parseDraftData draftFile
+
+      conflict = checkConflict id
+      if not conflict.empty?
+        open(draftFile, 'a') do |f|
+          f.puts "### CONFLICT ### YOU NEED TO CONFLICET THE BELOW DIFF MANUALLY"
+          conflict.each do |k, v|
+            if k != "description"
+              f.puts "#+#{k}: #{v}"
+            end
+          end
+          if conflict["description"]
+            tmp = Differ.diff_by_char(uploadData["issue"]["description"], @issueOrigin["description"].tr("\r", ''))
+            f.puts tmp.format_as(:ascii)
+          end
+        end
+        next
+      end
+
+      uploadIssue id, uploadData
+      break
     end
     t2 = Time.now
-
-    if updated == true
-      uploadData, duration = parseDraftData draftFile
-      uploadIssue id, uploadData
-    end
 
     duration = ((t2 - t1).to_i / 60) if duration.nil?
     createTimeEntry id, duration
 
     # update succeeded so clean up draft files
     cleanupDraft draftFile
+  end
+
+  def checkConflict id
+    params = {
+      "status_id" => "*",
+      "include" => "relations,attachments",
+      "key" => @serverconf["token"]
+    }
+
+    server = __get_response("#{@baseurl}/issues/#{id}.json", params)["issue"]
+    conflict = {}
+
+    [ "project", "tracker", "status", "priority", "author", "assigned_to", "subject", "description", "start_date", "due_date", "done_ratio", "is_private", "estimated_hours", "created_on", "updated_on", "closed_on", "attachments"].each do |elm|
+      if server[elm] != @issueOrigin[elm]
+        conflict[elm] = @issueOrigin[elm].tr("\r", '')
+      end
+    end
+
+    @issueOrigin = server
+
+    return conflict
   end
 
   def uploadIssue id, draftData
