@@ -14,6 +14,7 @@ require 'optparse'
 
 class MainCommand
   @@config = "#{ENV['HOME']}/.ticket/config"
+  @@config = ENV['TICKET_CONFIG'] if ENV['TICKET_CONFIG']
 
   def self.cmd args
     tmp = YAML.load_file(@@config)

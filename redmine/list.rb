@@ -35,10 +35,11 @@ module RedmineCmdList
       end
       opts.on("--show-duedate") do
         @config[:duedate] = true
+        @config[:order] = "duedate"
       end
       opts.on("-e", "--edit") do
-        @config[:closed] = true
         @config[:edit] = true
+        @config[:order] = "duedate"
       end
       opts.on("--show-metadata") do
         pp @metaCacheData
@@ -58,6 +59,14 @@ module RedmineCmdList
       @keys = @cacheData.keys.sort {|a, b| b.to_i <=> a.to_i} 
     elsif @config[:order] == "date"
       @keys = @cacheData.keys.sort {|a, b| @cacheData[b]["updated_on"] <=> @cacheData[a]["updated_on"]}
+    elsif @config[:order] == "duedate"
+      @keys = @cacheData.keys.sort do |a, b|
+        tmpa = @cacheData[a]["due_date"]
+        tmpb = @cacheData[b]["due_date"]
+        tmpa = "0000-00-00" if tmpa.nil?
+        tmpb = "0000-00-00" if tmpb.nil?
+        tmpb <=> tmpa
+      end
     end
 
     if @config[:listinput]
@@ -92,8 +101,8 @@ module RedmineCmdList
             "status_id" => status_name_to_id(status),
             "due_date" => duedate,
           }
-          pp @cacheData[id]
-          pp tmp
+          # pp @cacheData[id]
+          # pp tmp
         end
       end
     end

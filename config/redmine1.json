@@ -1,9 +1,0 @@
-{
-  "type": "redmine",
-  "baseurl": "nhoriguchi-redmine.japaneast.cloudapp.azure.com",
-  "baseport": "443",
-  "baseapi": "",
-  "token": "4cfc664a9966df0cb5cff66c5b53d50be2e58cbf",
-  "cacheDir": "/tmp/redmine1",
-  "format": "markdown"
-}
