@@ -11,6 +11,7 @@
 require 'pp'
 require 'yaml'
 require 'optparse'
+require 'logger'
 
 class MainCommand
   @@config = "#{ENV['HOME']}/.ticket/config"
@@ -22,6 +23,7 @@ class MainCommand
     @options = {
       :server => tmp['defaultserver'],
       :insecure => false,
+      :logger => Logger.new(STDOUT, level: Logger::Severity::INFO),
       :debug => false,
     }
     @options.merge! tmp
@@ -30,10 +32,22 @@ class MainCommand
     @options[:insecure] = true if ENV['INSECURE']
     @options[:debug] = true if ENV['DEBUG']
 
+    args << '-h' if args.empty?
     OptionParser.new do |opts|
-      opts.banner = "Usage: #{$0} [-options] subcommand"
+      opts.banner = "Usage: ticket [-options] subcommand"
       opts.on("-s <server>", "--server") do |s|
         @options[:server] = s
+      end
+      opts.on("-l <loglevel>", "--loglevel") do |l|
+        case l
+        when "info"
+          @options[:logger].level = Logger::INFO
+        when "debug"
+          @options[:logger].level = Logger::DEBUG
+        else
+          puts "supported log level: info, debug"
+          exit
+        end
       end
       opts.on("-S", "--insecure") do
         @options[:insecure] = true
@@ -41,9 +55,24 @@ class MainCommand
       opts.on("-D", "--debug") do
         @options[:debug] = true
       end
+
+      opts.on_tail("-h", "--help", "Show this message") do
+        puts opts
+        exit
+      end
     end.order! args
 
     cmd = args.shift
+
+    # global command
+    case cmd
+    when "server"
+      run_server
+      exit
+    when "config"
+      run_config
+      exit
+    end
 
     @options["cachedir"] += "/#{@options[:server]}"
     case tmp["servers"][@options[:server]]["type"]
@@ -54,6 +83,16 @@ class MainCommand
     else
       raise "invalid config #{tmp}"
     end
+  end
+
+  def self.run_server
+    puts ["Name", "Type", "Description"].join("\t")
+    @options["servers"].each do |k, v|
+      puts [k, v["type"], v["name"]].join("\t")
+    end
+  end
+
+  def self.run_config
   end
 end
 

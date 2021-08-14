@@ -11,6 +11,7 @@ require_relative "./redmine/connection.rb"
 require_relative "./redmine/list.rb"
 require_relative "./redmine/show.rb"
 require_relative "./redmine/edit.rb"
+require_relative "./redmine/status.rb"
 
 class Redmine
   include Common
@@ -21,6 +22,7 @@ class Redmine
   include RedmineCmdList
   include RedmineCmdShow
   include RedmineCmdEdit
+  include RedmineCmdStatus
 
   def initialize options, cmd, args
     @options = options
@@ -34,10 +36,10 @@ class Redmine
     end
 
     @cacheData = updateCache
-    puts "cache update done"
+    @options[:logger].debug("cache update done")
     # TODO: update metadata only when unknown key is found in ticket cache
     @metaCacheData = updateMetaCache
-    puts "metacache update done"
+    @options[:logger].debug("metacache update done")
 
     if cmd == "list"
       list args
@@ -49,6 +51,8 @@ class Redmine
       config args
     elsif cmd == "new"
       new args
+    elsif cmd == "status"
+      status args
     elsif cmd == "attach"
       attach args
     else

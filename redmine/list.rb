@@ -120,10 +120,9 @@ module RedmineCmdList
     editDir = "#{@options["cachedir"]}/edit"
     FileUtils.mkdir_p(editDir)
     draftFile = "#{editDir}/listedit"
-    draftFileOrig = "#{editDir}/.listedit"
-    draftFileBackup = "#{editDir}/.listedit.backup"
+    draftFileOrig = "#{editDir}/listedit.orig"
     File.write(draftFile, tmp)
-    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile} ; cp #{draftFile} #{draftFileBackup}"
+    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile}"
     ret = system("diff #{draftFile} #{draftFileOrig} > /dev/null")
     if ret == true
       puts "no change on draft file."
