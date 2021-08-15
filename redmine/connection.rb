@@ -75,6 +75,31 @@ module RedmineConnection
     end
   end
 
+  def post_issue uri, data
+    if @options["baseport"].to_i == 443
+      verify = OpenSSL::SSL::VERIFY_PEER
+      verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
+
+      Net::HTTP.start(uri.host, uri.port,
+                      :use_ssl => uri.scheme == 'https',
+                      :verify_mode => verify) do |http|
+        request = Net::HTTP::Post.new(uri.to_s)
+        request.set_content_type("application/json")
+        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request.body = data.to_json
+        response = http.request request
+      end
+    else
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        request = Net::HTTP::Post.new(uri.to_s)
+        request.set_content_type("application/json")
+        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request.body = data.to_json
+        response = http.request request
+      end
+    end
+  end
+
   def post_time_entry uri, data
     if @options["baseport"].to_i == 443
       verify = OpenSSL::SSL::VERIFY_PEER

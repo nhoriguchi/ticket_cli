@@ -3,7 +3,7 @@
 module RedmineCmdStatus
   def status args
     OptionParser.new do |opts|
-      opts.banner = "Usage: #{$0} [-options]"
+      opts.banner = "Usage: ticket [-options]"
     end.order! args
 
     server = @options["servers"][@options[:server]]
@@ -14,7 +14,14 @@ module RedmineCmdStatus
     drafts = find_saved_draft
     puts "Saved drafts:" if not drafts.empty?
     drafts.each do |tid|
-      puts "  #{tid}: #{@cacheData[tid]["subject"]}"
+      if @cacheData[tid]
+        puts "  #{tid}: #{@cacheData[tid]["subject"]}"
+      else
+        # draft for new ticket
+        draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
+        uploadData, duration = parseDraftData draftFile
+        puts "  #{tid}: #{uploadData["issue"]["subject"]}"
+      end
     end
   end
 
