@@ -2,16 +2,6 @@
 
 module RedmineCmdRelation
   def relation args
-    @config = {
-      :order => "id",
-      :closed => false,
-      :duedate => false,
-      :listinput => nil,
-      :edit => false,
-    }
-
-    listinput = {}
-
     OptionParser.new do |opts|
       opts.banner = "Usage:
 
@@ -31,7 +21,7 @@ module RedmineCmdRelation
   id1 == id2   or   id1 duplicates  id2
 
 "
-      opts.on("-r", "--remove") do
+      opts.on("-r", "--remove") do # TODO: remove relation
       end
     end.order! args
 

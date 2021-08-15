@@ -17,10 +17,18 @@ module RedmineCmdStatus
       if @cacheData[tid]
         puts "  #{tid}: #{@cacheData[tid]["subject"]}"
       else
-        # draft for new ticket
-        draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
-        uploadData, duration = parseDraftData draftFile
-        puts "  #{tid}: #{uploadData["issue"]["subject"]}"
+        case tid
+        when /^\d+-\d+$/
+          # draft for wiki pages
+          load_wiki_pages
+          wikiname = @wiki_pages.find {|a| a["wpid"] == tid}["title"]
+          puts "  #{tid}: #{wikiname}"
+        when "new"
+          # draft for new ticket
+          draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
+          uploadData, duration = parseDraftData draftFile
+          puts "  #{tid}: #{uploadData["issue"]["subject"]}"
+        end
       end
     end
   end

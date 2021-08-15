@@ -9,11 +9,13 @@ require_relative "./redmine/cache.rb"
 require_relative "./redmine/connection.rb"
 
 require_relative "./redmine/list.rb"
+require_relative "./redmine/project.rb"
 require_relative "./redmine/show.rb"
 require_relative "./redmine/new.rb"
 require_relative "./redmine/edit.rb"
 require_relative "./redmine/status.rb"
 require_relative "./redmine/relation.rb"
+require_relative "./redmine/wiki.rb"
 
 class Redmine
   include Common
@@ -22,11 +24,13 @@ class Redmine
   include RedmineConnection
 
   include RedmineCmdList
+  include RedmineCmdProject
   include RedmineCmdShow
   include RedmineCmdNew
   include RedmineCmdEdit
   include RedmineCmdStatus
   include RedmineCmdRelation
+  include RedmineCmdWiki
 
   def initialize options, cmd, args
     @options = options
@@ -47,6 +51,8 @@ class Redmine
 
     if cmd == "list"
       list args
+    elsif cmd == "project"
+      project args
     elsif cmd == "show"
       show args
     elsif cmd == "edit"
@@ -58,6 +64,7 @@ class Redmine
     elsif cmd == "relation"
       relation args
     elsif cmd == "wiki"
+      wiki args
     elsif cmd == "sanitize"
     elsif cmd == "search"
     elsif cmd == "tree"
