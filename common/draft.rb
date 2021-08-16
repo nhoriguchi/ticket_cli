@@ -1,3 +1,4 @@
+# coding: utf-8
 module Common
   def prepareDraft path, data
     return if File.exist? path
@@ -31,6 +32,8 @@ module Common
     afterMeta = []
     afterDescription = []
     metaline = 0
+    comment_part = false
+    comment = []
 
     afterEdit.each do |line|
       if metaline == 0
@@ -42,6 +45,13 @@ module Common
       elsif metaline == 1
         if line == "---"
           metaline = 2
+          comment_part = false
+        elsif line =~ /^#/
+          # skip comment line
+        elsif line =~ /^@@@/
+          comment_part = true
+        elsif comment_part == true
+          comment << line
         else
           afterMeta << line
         end
@@ -52,9 +62,11 @@ module Common
 
     res = {"issue" => {}}
     res["issue"]["description"] = afterDescription.join("\n")
+    res["issue"]["notes"] = comment.join("\n") if ! comment.empty?
 
     duration = nil
 
+    # TODO: 柔軟な指定方法
     afterMeta.each do |line|
       case line
       when /^id:\s*(.*?)\s*$/i
@@ -103,7 +115,7 @@ module Common
 
   # TODO: support adding comments
   def createTimeEntry id, duration
-    if duration >= 5
+    if duration >= 3
       min = duration % 60
       hour = duration / 60
 

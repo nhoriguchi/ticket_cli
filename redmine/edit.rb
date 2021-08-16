@@ -34,7 +34,10 @@ module RedmineCmdEdit
       else
         puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
         input = STDIN.gets.chomp
-        if input[0] == 'n' or input[0] == 'N' or input[0] == 's' or input[0] == 'S'
+        if input[0] == 'n' or input[0] == 'N'
+          cleanupDraft draftFile
+          return
+        elsif input[0] == 's' or input[0] == 'S'
           return
         elsif input[0] == 'y' or input[0] == 'Y'
           true
@@ -140,9 +143,11 @@ module RedmineCmdEdit
     editdata << "DueDate: #{dueDate}"
     editdata << "Parent: #{parent}"
     editdata << "Duration:"
+    editdata << "# OpenedOn: #{Time.now.strftime("%Y-%m-%d %H:%M")}"
+    editdata << "@@@ lines from here to next '---' line is considered as note/comment"
     editdata << "---"
     editdata << description.gsub(/\r\n?/, "\n")
-
+    editdata << ""
     return editdata
   end
 end

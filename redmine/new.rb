@@ -78,7 +78,7 @@ module RedmineCmdNew
     uri = URI("#{@baseurl}/issues.json")
     @options[:logger].debug(draftData)
     response = post_issue uri, draftData
-
+pp response.body
     case response
     when Net::HTTPSuccess, Net::HTTPRedirection
       puts "upload done"

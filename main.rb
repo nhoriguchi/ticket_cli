@@ -34,9 +34,10 @@ class MainCommand
 
     args << '-h' if args.empty?
     OptionParser.new do |opts|
-      opts.banner = "Usage: ticket [-options] subcommand
+      opts.banner = "Usage: ticket [-options] <subcommand>
 
-  Subcommand for Redmine:
+  Subcommand for Redmine (see `ticket <subcommand> -h` for more details):
+
     - list
     - project
     - show
@@ -45,6 +46,7 @@ class MainCommand
     - status
     - relation
     - wiki
+
 "
       opts.on("-s <server>", "--server") do |s|
         @options[:server] = s
