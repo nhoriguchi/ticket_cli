@@ -13,8 +13,9 @@ module RedmineCmdProject
 
   def show_projects
     puts "ID\tProject Name"
+    # pp @metaCacheData["projects"]
     @metaCacheData["projects"].sort_by {|v| v["id"]}.each do |pj|
-      puts "#{pj["id"]}\t#{pj["name"]}"
+      puts "#{pj["id"]}\t#{pj["identifier"]}\t#{pj["name"]}"
     end
   end
 end

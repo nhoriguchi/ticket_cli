@@ -68,17 +68,20 @@ module RedmineCmdList
         tmpb <=> tmpa
       end
     end
-
-    if @config[:listinput]
-      list_input @config[:listinput]
-    elsif @config[:edit] == true
-      edit_list
-    elsif @config[:duedate] == true
-      puts list_duedate
-    elsif @config[:order] == "id"
-      list_id
-    else
-      list_update_date
+    
+    begin
+      if @config[:listinput]
+        list_input @config[:listinput]
+      elsif @config[:edit] == true
+        edit_list
+      elsif @config[:duedate] == true
+        puts list_duedate
+      elsif @config[:order] == "id"
+        list_id
+      else
+        list_update_date
+      end
+    rescue
     end
   end
 

@@ -108,7 +108,7 @@ module RedmineCache
     a = __get_response "#{@baseurl}/trackers.json", params
     metaCacheData["trackers"] = a["trackers"]
 
-    if @serverconf["role"] == "admin"
+    if @serverconf["setting"]["userlist"] == true
       a = __get_response "#{@baseurl}/users.json", params
       metaCacheData["users"] = a["users"]
     end

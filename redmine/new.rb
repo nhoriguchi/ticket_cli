@@ -44,12 +44,17 @@ module RedmineCmdNew
     end
     t2 = Time.now
 
-    resbody = response.body.to_json
-    @options[:logger].debug(resbody)
-    newid = resbody["issue"]["id"]
+    # TODO: response を json に変換するところで例外が発生する。
+    # "\\xE3" from ASCII-8BIT to UTF-8 (Encoding::UndefinedConversionError)
+    begin
+      resbody = response.body.to_json
+      @options[:logger].debug(resbody)
+      newid = resbody["issue"]["id"]
 
-    duration = ((t2 - t1).to_i / 60) if duration.nil?
-    createTimeEntry newid, duration
+      duration = ((t2 - t1).to_i / 60) if duration.nil?
+      createTimeEntry newid, duration
+    rescue
+    end
 
     # update succeeded so clean up draft files
     cleanupDraft draftFile
@@ -66,6 +71,7 @@ module RedmineCmdNew
     editdata << "StartDate: "
     editdata << "DueDate: "
     editdata << "Parent: null"
+    editdata << "Assigned: null" if @serverconf["setting"]["userlist"] == true
     editdata << "Duration:"
     editdata << "Progress: 0"
     editdata << "---"
@@ -78,7 +84,7 @@ module RedmineCmdNew
     uri = URI("#{@baseurl}/issues.json")
     @options[:logger].debug(draftData)
     response = post_issue uri, draftData
-pp response.body
+    # pp response.body.to_json
     case response
     when Net::HTTPSuccess, Net::HTTPRedirection
       puts "upload done"

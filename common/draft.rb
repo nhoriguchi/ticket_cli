@@ -23,10 +23,12 @@ module Common
   end
 
   def cleanupDraft path
-    File.delete(path)
-    File.delete(path + ".orig")
+    delDir = "#{@options["cachedir"]}/deleted_drafts"
+    FileUtils.mkdir_p(delDir)
+    FileUtils.mv([path, path + ".orig"], delDir)
   end
 
+  # TODO: Redmine 固有へ
   def parseDraftData draftFile
     afterEdit = File.read(draftFile).split("\n")
     afterMeta = []
@@ -78,8 +80,7 @@ module Common
       when /^subject:\s*(.*?)\s*$/i
         res["issue"]["subject"] = $1
       when /^project:\s*(.*?)\s*$/i
-        tmp = @metaCacheData["projects"].find {|a| a["name"].downcase == $1.downcase}
-        res["issue"]["project_id"] = tmp["id"] if tmp
+        res["issue"]["project_id"] = parse_projectspec($1)
       when /^type:\s*(.*?)\s*$/i
         tmp = @metaCacheData["trackers"].find {|a| a["name"].downcase == $1.downcase}
         res["issue"]["tracker_id"] = tmp["id"] if tmp
@@ -89,11 +90,16 @@ module Common
       when /^estimatedtime:\s*(.*?)\s*$/i
         res["issue"]["estimated_hours"] = $1.to_i
       when /^startdate:\s*(.*?)\s*$/i
-        res["issue"]["start_date"] = $1 == "" ? nil : $1
+        # res["issue"]["start_date"] = $1 == "" ? nil : $1
+        res["issue"]["start_date"] = parse_date($1)
       when /^duedate:\s*(.*?)\s*$/i
-        res["issue"]["due_date"] = $1 == "" ? nil : $1
+        res["issue"]["due_date"] = parse_date($1) # = $1 == "" ? nil : $1
       when /^parent:\s*(.*?)\s*$/i
         res["issue"]["parent_issue_id"] = $1 == "null" ? nil : $1.to_i
+      when /^assigned:\s*(.*?)\s*$/i
+        res["issue"]["assigned_to_id"] = parse_userspec($1)
+        # pp @metaCacheData["users"]
+        # p res["issue"]["assigned_to_id"]
       when /^duration:\s*(.*?)\s*$/i
         tmp = $1
         if tmp =~ /(\d+):(\d{2})/
@@ -111,6 +117,109 @@ module Common
     end
 
     return res, duration
+  end
+
+  def saveDraftDuration draftFile, duration
+    lines = File.read(draftFile).split("\n")
+    metaline = 0
+    comment_part = false
+    lines.each_with_index do |line, i|
+      if metaline == 0
+        if line == "---"
+          metaline = 1
+        end
+      elsif metaline == 1
+        if line == "---"
+          metaline = 2
+          comment_part = false
+        elsif line =~ /^#/
+        # skip comment line
+        elsif line =~ /^@@@/
+          comment_part = true
+        end
+
+        if comment_part == false and line =~ /^duration:\s*(.*?)(\+)?\s*$/i
+          tmp = $1
+          plus = $2
+          # puts "--- [#{tmp}], [#{plus}], #{duration}"
+          if tmp =~ /(\d+):(\d{2})/
+            tmp = $1.to_i * 60 + $2.to_i
+          else
+            tmp = tmp.to_i
+          end
+          tmp += duration
+          lines[i] = "Duration: #{tmp}+"
+          break
+        end
+      end
+    end
+    File.write(draftFile, lines.join("\n"))
+  end
+
+  def getDraftDuration draftFile, duration
+    lines = File.read(draftFile).split("\n")
+    metaline = 0
+    lines.each_with_index do |line, i|
+      if metaline == 0
+        if line == "---"
+          metaline = 1
+        end
+      elsif metaline == 1
+        if line == "---"
+          return 0
+        elsif line =~ /^#/
+        # skip comment line
+        elsif line =~ /^@@@/
+          return 0
+        end
+
+        if line =~ /^duration:\s*(.*?)(\+)?\s*$/i
+          tmp = $1
+          plus = $2
+          # puts "--- [#{tmp}], [#{plus}], #{duration}"
+          if tmp =~ /(\d+):(\d{2})/
+            tmp = $1.to_i * 60 + $2.to_i
+          else
+            tmp = tmp.to_i
+          end
+          if plus == "+"
+            tmp += duration
+          else
+            tmp = duration
+          end
+          return tmp
+        end
+      end
+    end
+    return duration
+  end
+
+  def parse_userspec userspec
+    tmp = @metaCacheData["users"].find {|elm| elm["id"].to_s == userspec}
+    return userspec if tmp
+    tmp = @metaCacheData["users"].find {|elm| elm["login"] == userspec}
+    return tmp["id"] if tmp
+    return ""
+  end
+
+  def parse_projectspec projectspec
+    tmp = @metaCacheData["projects"].find {|elm| elm["id"].to_s == projectspec}
+    return projectspec if tmp
+    reg = Regexp.new(projectspec, Regexp::IGNORECASE)
+    tmp = @metaCacheData["projects"].find {|elm| elm["identifier"].to_s =~ reg}
+    return tmp["id"] if tmp
+    tmp = @metaCacheData["projects"].find {|a| a["name"] =~ reg}
+    return tmp["id"] if tmp
+    return ""
+  end
+
+  def parse_date datespec
+    return "" if datespec == ""
+    if datespec =~ /^([\+\-]\d+)$/ or datespec == "0"
+      return (Time.now + (datespec.to_i) * 86400).strftime("%Y-%m-%d")
+    end
+    tmp = DateTime.parse(datespec)
+    tmp.strftime("%Y-%m-%d")
   end
 
   # TODO: support adding comments

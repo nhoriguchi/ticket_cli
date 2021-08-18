@@ -71,7 +71,8 @@ class Redmine
     elsif cmd == "file"
       attach_file args
     else
-      puts "help"
+      puts "see `ticket -h`"
+      exit
     end
   end
 

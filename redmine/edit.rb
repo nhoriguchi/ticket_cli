@@ -19,6 +19,7 @@ module RedmineCmdEdit
 
     @issueOrigin = @cacheData[id]
 
+    # TODO: キャッシュディレクトリは draft.rb 側で参照するように
     draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
     prepareDraft draftFile, draftData(id).join("\n")
 
@@ -28,6 +29,7 @@ module RedmineCmdEdit
     updated = false
     while true
       updated = editDraft draftFile
+      uploadData, duration = parseDraftData draftFile
 
       if allyes == true
         break
@@ -36,8 +38,10 @@ module RedmineCmdEdit
         input = STDIN.gets.chomp
         if input[0] == 'n' or input[0] == 'N'
           cleanupDraft draftFile
+          puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/#{id}.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
           return
         elsif input[0] == 's' or input[0] == 'S'
+          saveDraftDuration draftFile, ((Time.now - t1).to_i / 60)
           return
         elsif input[0] == 'y' or input[0] == 'Y'
           true
@@ -47,8 +51,6 @@ module RedmineCmdEdit
       end
 
       break if updated == false
-
-      uploadData, duration = parseDraftData draftFile
 
       conflict = checkConflict id
       if not conflict.empty?
@@ -72,8 +74,11 @@ module RedmineCmdEdit
     end
     t2 = Time.now
 
-    duration = ((t2 - t1).to_i / 60) if duration.nil?
+    duration = getDraftDuration(draftFile, ((t2 - t1).to_i / 60))
+    puts "add time_entry (#{duration} min) to ID  #{id}"
     createTimeEntry id, duration
+
+    # TODO: 条件ベースでの自動状態更新
 
     # update succeeded so clean up draft files
     cleanupDraft draftFile
@@ -128,6 +133,7 @@ module RedmineCmdEdit
     startDate = tmp["start_date"]
     dueDate = tmp["due_date"]
     parent = tmp["parent"].nil? ? "null" : tmp["parent"]["id"]
+    assignedTo = tmp["assigned_to"].nil? ? "null" : tmp["assigned_to"]["name"]
 
     editdata = []
     editdata << "---"
@@ -142,6 +148,7 @@ module RedmineCmdEdit
     editdata << "StartDate: #{startDate}"
     editdata << "DueDate: #{dueDate}"
     editdata << "Parent: #{parent}"
+    editdata << "Assigned: #{assignedTo}" if @serverconf["setting"]["userlist"] == true
     editdata << "Duration:"
     editdata << "# OpenedOn: #{Time.now.strftime("%Y-%m-%d %H:%M")}"
     editdata << "@@@ lines from here to next '---' line is considered as note/comment"
