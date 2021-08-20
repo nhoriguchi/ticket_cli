@@ -28,7 +28,7 @@ class MainCommand
     }
     @options.merge! tmp
 
-    @options[:server] = ENV['SERVER'] if ENV['SERVER']
+    @options[:server] = ENV['TICKET_SERVER'] if ENV['TICKET_SERVER']
     @options[:insecure] = true if ENV['INSECURE']
     @options[:debug] = true if ENV['DEBUG']
 

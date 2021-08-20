@@ -56,7 +56,7 @@ module RedmineCmdList
     end
 
     if @config[:order] == "id"
-      @keys = @cacheData.keys.sort {|a, b| b.to_i <=> a.to_i} 
+      @keys = @cacheData.keys.sort {|a, b| b.to_i <=> a.to_i}
     elsif @config[:order] == "date"
       @keys = @cacheData.keys.sort {|a, b| @cacheData[b]["updated_on"] <=> @cacheData[a]["updated_on"]}
     elsif @config[:order] == "duedate"
@@ -68,7 +68,7 @@ module RedmineCmdList
         tmpb <=> tmpa
       end
     end
-    
+
     begin
       if @config[:listinput]
         list_input @config[:listinput]
