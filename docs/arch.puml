@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+
+package システム {
+  rectangle Redmine as A  #lightgreen
+  rectangle Growi   as B  #lightgreen
+  rectangle GitHub  as C1 #lightgreen
+  rectangle Gist    as C2 #lightgreen
+}
+package キャッシュ {
+  rectangle RMCache    as CA  #orange
+  rectangle GrCache    as CB  #orange
+  rectangle GHCache    as CC1 #orange
+  rectangle GistCache  as CC2 #orange
+}
+package アウトプット {
+  rectangle "Edit" as E #red
+}
+
+A-->CA
+B-->CB
+C1-->CC1
+C2-->CC2
+CA-->E
+CB-->E
+CC1-->E
+CC2-->E
+E-->A
+@enduml

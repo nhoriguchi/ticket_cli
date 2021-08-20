@@ -109,7 +109,7 @@ module RedmineCmdWiki
     collect_wiki_pages project
     wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
 
-    uri = URI("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
+    uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
     params = {"key" => @serverconf["token"]}
     response = __get_response(uri, params)["wiki_page"]
     puts response["text"]
@@ -129,7 +129,7 @@ module RedmineCmdWiki
     wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
 
     allyes = false
-    uri = URI("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
+    uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
     params = {"key" => @serverconf["token"]}
     draftFile = "#{@options["cachedir"]}/edit/#{wikiid}.#{@serverconf["format"]}"
     response = __get_response(uri, params)["wiki_page"]
@@ -163,7 +163,7 @@ module RedmineCmdWiki
   end
 
   def uploadNewWiki proj, wikiname, draftData
-    uri = URI("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
+    uri = URI.encode("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
     @options[:logger].debug(draftData)
     response = put_issue uri, draftData
 

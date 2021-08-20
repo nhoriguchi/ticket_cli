@@ -75,7 +75,7 @@ module RedmineCmdRelation
     if not ["->", "<-", "-o", "o-", "-c", "c-", "--", "==", "precedes", "follows", "blocks", "blocked", "copied_to", "copied_from", "relates", "duplicates"].include? str
       raise "invalid relation: #{str}"
     end
-    
+
     case str
     when "->"
       return "procedes"
