@@ -108,9 +108,12 @@ module RedmineCache
     a = __get_response "#{@baseurl}/trackers.json", params
     metaCacheData["trackers"] = a["trackers"]
 
-    if @serverconf["setting"]["userlist"] == true
-      a = __get_response "#{@baseurl}/users.json", params
-      metaCacheData["users"] = a["users"]
+    begin
+      if @serverconf["setting"]["userlist"] == true
+        a = __get_response "#{@baseurl}/users.json", params
+        metaCacheData["users"] = a["users"]
+      end
+    rescue
     end
 
     a = __get_response "#{@baseurl}/issue_statuses.json", params
@@ -121,8 +124,21 @@ module RedmineCache
   end
 
   def is_status_closed status
-    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] == status}
+    tmp = parse_statusspec status
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["id"] == status}
     tmp["is_closed"]
+  end
+
+  def parse_statusspec statusspec
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["id"] == statusspec}
+    return statusspec if tmp
+    reg = Regexp.new(statusspec, Regexp::IGNORECASE)
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] =~ reg}
+    return tmp["id"]
+  end
+
+  def default_priority
+    @metaCacheData["issue_priorities"].find {|elm| elm["is_default"]}["id"]
   end
 
   # TODO: 部分一致
@@ -131,6 +147,7 @@ module RedmineCache
     tmp["id"]
   end
 
+  # TODO: 共通関数に集約
   def status_name_to_id status
     tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] == status}
     tmp["id"]

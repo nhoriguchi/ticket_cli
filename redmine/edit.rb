@@ -50,6 +50,11 @@ module RedmineCmdEdit
         end
       end
 
+      begin
+        apply_ticket_rules uploadData
+      rescue
+      end
+
       break if updated == false
 
       conflict = checkConflict id
@@ -148,7 +153,10 @@ module RedmineCmdEdit
     editdata << "StartDate: #{startDate}"
     editdata << "DueDate: #{dueDate}"
     editdata << "Parent: #{parent}"
-    editdata << "Assigned: #{assignedTo}" if @serverconf["setting"]["userlist"] == true
+    begin
+      editdata << "Assigned: #{assignedTo}" if @serverconf["setting"]["userlist"] == true
+    rescue
+    end
     editdata << "Duration:"
     editdata << "# OpenedOn: #{Time.now.strftime("%Y-%m-%d %H:%M")}"
     editdata << "@@@ lines from here to next '---' line is considered as note/comment"
@@ -156,5 +164,52 @@ module RedmineCmdEdit
     editdata << description.gsub(/\r\n?/, "\n")
     editdata << ""
     return editdata
+  end
+
+  def apply_ticket_rules uploadData
+    updated = false
+    rules = @serverconf["setting"]["issuerules"]
+
+    pp @metaCacheData
+    pp uploadData
+
+    if rules["autowip"]
+      if uploadData["issue"]["done_ratio"] > 0 and
+        uploadData["issue"]["status_id"] == default_state(uploadData["issue"]["tracker_id"])
+        uploadData["issue"]["status_id"] = status_name_to_id(rules["autowip"])
+        updated = true
+      end
+    end
+
+    if rules["autostartdate"]
+      if uploadData["issue"]["start_date"] == "" and
+        uploadData["issue"]["status_id"] != default_state(uploadData["issue"]["tracker_id"])
+        uploadData["issue"]["start_date"] = parse_date("0")
+        updated = true
+      end
+    end
+
+    if rules["closeclearpriority"]
+      if is_status_closed uploadData["issue"]["status_id"]
+        uploadData["issue"]["priority_id"] = default_priority
+        updated = true
+      end
+    end
+
+    if rules["setduedateonclose"]
+      if uploadData["issue"]["due_date"] == "" and is_status_closed uploadData["issue"]["status_id"]
+        uploadData["issue"]["due_date"] = parse_date("0")
+        updated = true
+      end
+    end
+
+    pp uploadData
+    return updated
+  end
+
+  # TODO: 配置再検討、共通関数
+  def default_state tracker
+    tmp = @metaCacheData["trackers"].find {|t| t["id"] == tracker}
+    return tmp["default_status"]["id"]
   end
 end
