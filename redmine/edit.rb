@@ -23,7 +23,7 @@ module RedmineCmdEdit
     draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
     prepareDraft draftFile, draftData(id).join("\n")
 
-    # TODO: update metadata cache asynchronously here
+    asyncUpdateMetaCache
 
     t1 = Time.now
     updated = false
@@ -82,8 +82,6 @@ module RedmineCmdEdit
     duration = getDraftDuration(draftFile, ((t2 - t1).to_i / 60))
     createTimeEntry id, duration
     puts "created time_entry (#{duration} min) to ID  #{id}"
-
-    # TODO: 条件ベースでの自動状態更新
 
     # update succeeded so clean up draft files
     cleanupDraft draftFile
@@ -170,13 +168,10 @@ module RedmineCmdEdit
     updated = false
     rules = @serverconf["setting"]["issuerules"]
 
-    pp @metaCacheData
-    pp uploadData
-
     if rules["autowip"]
       if uploadData["issue"]["done_ratio"] > 0 and
         uploadData["issue"]["status_id"] == default_state(uploadData["issue"]["tracker_id"])
-        uploadData["issue"]["status_id"] = status_name_to_id(rules["autowip"])
+        uploadData["issue"]["status_id"] = parse_statusspec(rules["autowip"])
         updated = true
       end
     end
@@ -203,7 +198,6 @@ module RedmineCmdEdit
       end
     end
 
-    pp uploadData
     return updated
   end
 

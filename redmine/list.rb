@@ -55,6 +55,8 @@ module RedmineCmdList
       end
     end.order! args
 
+    asyncUpdateMetaCache
+
     if @config[:closed] == false
       @cacheData.select! {|k, v| is_status_closed(v["status"]["name"]) == false}
     end
@@ -115,8 +117,8 @@ module RedmineCmdList
 
         tmp[id] = {
           "done_ratio" => done_ratio.to_i,
-          "tracker_id" => tracker_name_to_id(tracker),
-          "status_id" => status_name_to_id(status),
+          "tracker_id" => parse_trackerspec(tracker),
+          "status_id" => parse_statusspec(status),
           "due_date" => duedate,
           "project_id" => parse_projectspec(project),
           "subject" => subject,
@@ -140,6 +142,7 @@ module RedmineCmdList
     ret = editDraft(draftFile)
     ret = `diff -U1 #{draftFileOrig} #{draftFile} | grep ^+ | grep -v '^+++ '`
     list_input ret.split("\n")
+    cleanupDraft draftFile
   end
 
   def list_id

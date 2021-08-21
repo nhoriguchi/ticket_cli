@@ -76,20 +76,22 @@ module RedmineCache
     return cacheData
   end
 
-  def updateMetaCache
+  def updateMetaCache force=false
     metaCacheFile = @options["cachedir"] + "/metaCacheData"
-    if FileTest.exist? metaCacheFile
-      metaCacheData = JSON.parse(File.read(metaCacheFile))
-      return metaCacheData
+    if FileTest.exist? metaCacheFile and force == false
+      @metaCacheData = JSON.parse(File.read(metaCacheFile))
     else
       FileUtils.mkdir_p(@options["cachedir"])
-      metaCacheData = createMetaCache
-      # TODO: persist metadata cache after implementing update detection
-      # File.write(metaCacheFile, metaCacheData.to_json)
+      @metaCacheData = createMetaCache
     end
 
-    File.write(metaCacheFile, metaCacheData.to_json)
-    return metaCacheData
+    File.write(metaCacheFile, @metaCacheData.to_json)
+  end
+
+  def asyncUpdateMetaCache
+    Thread.start do
+      updateMetaCache true
+    end
   end
 
   def createMetaCache
@@ -125,8 +127,12 @@ module RedmineCache
 
   def is_status_closed status
     tmp = parse_statusspec status
-    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["id"] == status}
+    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["id"] == tmp}
     tmp["is_closed"]
+  end
+
+  def default_priority
+    @metaCacheData["issue_priorities"].find {|elm| elm["is_default"]}["id"]
   end
 
   def parse_statusspec statusspec
@@ -137,19 +143,39 @@ module RedmineCache
     return tmp["id"]
   end
 
-  def default_priority
-    @metaCacheData["issue_priorities"].find {|elm| elm["is_default"]}["id"]
+  def parse_trackerspec trackerspec
+    tmp = @metaCacheData["trackers"].find {|elm| elm["id"] == trackerspec}
+    return trackerspec if tmp
+    reg = Regexp.new(trackerspec, Regexp::IGNORECASE)
+    tmp = @metaCacheData["trackers"].find {|elm| elm["name"] =~ reg}
+    return tmp["id"]
   end
 
-  # TODO: 部分一致
-  def tracker_name_to_id tracker
-    tmp = @metaCacheData["trackers"].find {|elm| elm["name"] == tracker}
-    tmp["id"]
+  def parse_userspec userspec
+    tmp = @metaCacheData["users"].find {|elm| elm["id"].to_s == userspec}
+    return userspec if tmp
+    tmp = @metaCacheData["users"].find {|elm| elm["login"] == userspec}
+    return tmp["id"] if tmp
+    return ""
   end
 
-  # TODO: 共通関数に集約
-  def status_name_to_id status
-    tmp = @metaCacheData["issue_statuses"].find {|elm| elm["name"] == status}
-    tmp["id"]
+  def parse_projectspec projectspec
+    tmp = @metaCacheData["projects"].find {|elm| elm["id"].to_s == projectspec}
+    return projectspec if tmp
+    reg = Regexp.new(projectspec, Regexp::IGNORECASE)
+    tmp = @metaCacheData["projects"].find {|elm| elm["identifier"].to_s =~ reg}
+    return tmp["id"] if tmp
+    tmp = @metaCacheData["projects"].find {|a| a["name"] =~ reg}
+    return tmp["id"] if tmp
+    return ""
+  end
+
+  def parse_date datespec
+    return "" if datespec == ""
+    if datespec =~ /^([\+\-]\d+)$/ or datespec == "0"
+      return (Time.now + (datespec.to_i) * 86400).strftime("%Y-%m-%d")
+    end
+    tmp = DateTime.parse(datespec)
+    tmp.strftime("%Y-%m-%d")
   end
 end

@@ -193,34 +193,6 @@ module Common
     return duration
   end
 
-  def parse_userspec userspec
-    tmp = @metaCacheData["users"].find {|elm| elm["id"].to_s == userspec}
-    return userspec if tmp
-    tmp = @metaCacheData["users"].find {|elm| elm["login"] == userspec}
-    return tmp["id"] if tmp
-    return ""
-  end
-
-  def parse_projectspec projectspec
-    tmp = @metaCacheData["projects"].find {|elm| elm["id"].to_s == projectspec}
-    return projectspec if tmp
-    reg = Regexp.new(projectspec, Regexp::IGNORECASE)
-    tmp = @metaCacheData["projects"].find {|elm| elm["identifier"].to_s =~ reg}
-    return tmp["id"] if tmp
-    tmp = @metaCacheData["projects"].find {|a| a["name"] =~ reg}
-    return tmp["id"] if tmp
-    return ""
-  end
-
-  def parse_date datespec
-    return "" if datespec == ""
-    if datespec =~ /^([\+\-]\d+)$/ or datespec == "0"
-      return (Time.now + (datespec.to_i) * 86400).strftime("%Y-%m-%d")
-    end
-    tmp = DateTime.parse(datespec)
-    tmp.strftime("%Y-%m-%d")
-  end
-
   # TODO: support adding comments
   def createTimeEntry id, duration
     if duration >= 3

@@ -20,6 +20,8 @@ module RedmineCmdNew
     draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
     prepareDraft draftFile, draftNewData.join("\n")
 
+    asyncUpdateMetaCache
+
     t1 = Time.now
     while true
       editDraft draftFile

@@ -46,7 +46,7 @@ class Redmine
     @cacheData = updateCache
     @options[:logger].debug("cache update done")
     # TODO: update metadata only when unknown key is found in ticket cache
-    @metaCacheData = updateMetaCache
+    updateMetaCache
     @options[:logger].debug("metacache update done")
 
     if cmd == "list"
