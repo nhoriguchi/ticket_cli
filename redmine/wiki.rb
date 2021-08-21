@@ -125,17 +125,21 @@ module RedmineCmdWiki
 
     # TODO: need refactoring
     @wiki_pages = []
-    collect_wiki_pages project
-    wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
-
-    allyes = false
-    uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
-    params = {"key" => @serverconf["token"]}
     draftFile = "#{@options["cachedir"]}/edit/#{wikiid}.#{@serverconf["format"]}"
-    response = __get_response(uri, params)["wiki_page"]
-    # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
-    prepareDraft draftFile, response["text"]
-    check_upload_draft draftFile
+    begin
+      collect_wiki_pages project
+      wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
+
+      allyes = false
+      uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
+      params = {"key" => @serverconf["token"]}
+      response = __get_response(uri, params)["wiki_page"]
+      # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
+      prepareDraft draftFile, response["text"]
+      check_upload_draft draftFile
+    rescue
+      puts "Failed to download wikipage from server. so only local cache can be edittable."
+    end
 
     while true
       editDraft draftFile
