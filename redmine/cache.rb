@@ -125,6 +125,7 @@ module RedmineCache
     tmp["is_closed"]
   end
 
+  # TODO: 部分一致
   def tracker_name_to_id tracker
     tmp = @metaCacheData["trackers"].find {|elm| elm["name"] == tracker}
     tmp["id"]

@@ -90,10 +90,9 @@ module Common
       when /^estimatedtime:\s*(.*?)\s*$/i
         res["issue"]["estimated_hours"] = $1.to_i
       when /^startdate:\s*(.*?)\s*$/i
-        # res["issue"]["start_date"] = $1 == "" ? nil : $1
         res["issue"]["start_date"] = parse_date($1)
       when /^duedate:\s*(.*?)\s*$/i
-        res["issue"]["due_date"] = parse_date($1) # = $1 == "" ? nil : $1
+        res["issue"]["due_date"] = parse_date($1)
       when /^parent:\s*(.*?)\s*$/i
         res["issue"]["parent_issue_id"] = $1 == "null" ? nil : $1.to_i
       when /^assigned:\s*(.*?)\s*$/i
@@ -156,6 +155,7 @@ module Common
     File.write(draftFile, lines.join("\n"))
   end
 
+  # TODO: たぶんこういう関数にユニットテストが必要なのだろう。
   def getDraftDuration draftFile, duration
     lines = File.read(draftFile).split("\n")
     metaline = 0
@@ -177,17 +177,16 @@ module Common
           tmp = $1
           plus = $2
           # puts "--- [#{tmp}], [#{plus}], #{duration}"
+          return duration if tmp.nil?
+
           if tmp =~ /(\d+):(\d{2})/
-            tmp = $1.to_i * 60 + $2.to_i
+            tmp2 = $1.to_i * 60 + $2.to_i
           else
-            tmp = tmp.to_i
+            tmp2 = tmp.to_i
           end
-          if plus == "+"
-            tmp += duration
-          else
-            tmp = duration
-          end
-          return tmp
+
+          tmp2 += duration if plus == "+"
+          return tmp2
         end
       end
     end

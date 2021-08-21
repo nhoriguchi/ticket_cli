@@ -51,7 +51,7 @@ module RedmineCmdWiki
 
   def list_wiki_pages args
     if args.size > 0
-      projs = args.map {|a| parse_project(a)}
+      projs = args.map {|a| parse_projectspec(a)}
     else
       # all projects
       projs = @metaCacheData["projects"].map {|pj| pj["id"].to_s}
@@ -68,7 +68,7 @@ module RedmineCmdWiki
 
   def create_wiki_page args
     raise "Usage: ticket wiki new <project> <wikiname>" if args.size != 2
-    project = parse_project args[0]
+    project = parse_projectspec args[0]
     wikiname = args[1]
 
     allyes = false
@@ -174,16 +174,6 @@ module RedmineCmdWiki
       raise response.value
     end
     return response
-  end
-
-  def parse_project str
-    if str =~ /^\d+$/
-      return str
-    else
-      tmp = @metaCacheData["projects"].find {|a| a["name"].downcase == str.downcase}
-      raise "invalid project #{str}" if tmp.nil?
-      return tmp["id"].to_s
-    end
   end
 
   def collect_wiki_pages proj

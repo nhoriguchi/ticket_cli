@@ -75,8 +75,8 @@ module RedmineCmdEdit
     t2 = Time.now
 
     duration = getDraftDuration(draftFile, ((t2 - t1).to_i / 60))
-    puts "add time_entry (#{duration} min) to ID  #{id}"
     createTimeEntry id, duration
+    puts "created time_entry (#{duration} min) to ID  #{id}"
 
     # TODO: 条件ベースでの自動状態更新
 

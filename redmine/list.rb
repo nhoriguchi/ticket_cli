@@ -18,6 +18,7 @@ module RedmineCmdList
       :duedate => false,
       :listinput => nil,
       :edit => false,
+      :reversed => false,
     }
 
     listinput = {}
@@ -49,10 +50,19 @@ module RedmineCmdList
         @config[:closed] = true
         @config[:listinput] = f
       end
+      opts.on("-r", "--reverse", "逆順で表示") do |f|
+        @config[:reversed] = true
+      end
     end.order! args
 
     if @config[:closed] == false
       @cacheData.select! {|k, v| is_status_closed(v["status"]["name"]) == false}
+    end
+
+    if args.size > 0
+      @cacheData.select! do |k, v|
+        args.any? {|arg| parse_projectspec(arg) == v["project"]["id"]}
+      end
     end
 
     if @config[:order] == "id"
@@ -69,9 +79,15 @@ module RedmineCmdList
       end
     end
 
+    if @config[:reversed] == true
+      @keys.reverse!
+      # @cacheData = @cacheData.sort_by{|k, _| k.to_i}.to_h
+    end
+
     begin
       if @config[:listinput]
-        list_input @config[:listinput]
+        raise
+        # list_input @config[:listinput]
       elsif @config[:edit] == true
         edit_list
       elsif @config[:duedate] == true
@@ -87,54 +103,43 @@ module RedmineCmdList
 
   def list_input input
     tmp = {}
-    File.read(input).split("\n").each do |line|
-      if line =~ /(\d+)\s+(\d+)\s+(\w+)\s+(\w+)\s+([\w\-]+)\s+/
-        id, done_ratio, tracker, status, duedate = $1, $2, $3, $4, $5
+    input.each do |line|
+      if line =~ /^\+(\d+)\s+(\d+)\s+(\w+)\s+(\w+)\s+([\d\-\/\+]+)\s+\(([^\)]+)\)\s+(.+)\s*$/
+        id, done_ratio, tracker, status, duedate, project, subject = $1, $2, $3, $4, $5, $6, $7
 
         if duedate == "-"
           duedate = nil
         else
-          duedate = Date.parse(duedate).strftime("%Y-%m-%d")
+          duedate = parse_date(duedate)
         end
 
-        if @cacheData[id]["done_ratio"] != done_ratio.to_i or @cacheData[id]["tracker"]["name"] != tracker or @cacheData[id]["status"]["name"] != status or @cacheData[id]["due_date"] != duedate
-          tmp[id] = {
-            "done_ratio" => done_ratio.to_i,
-            "tracker_id" => tracker_name_to_id(tracker),
-            "status_id" => status_name_to_id(status),
-            "due_date" => duedate,
-          }
-          # pp @cacheData[id]
-          # pp tmp
-        end
+        tmp[id] = {
+          "done_ratio" => done_ratio.to_i,
+          "tracker_id" => tracker_name_to_id(tracker),
+          "status_id" => status_name_to_id(status),
+          "due_date" => duedate,
+          "project_id" => parse_projectspec(project),
+          "subject" => subject,
+        }
       end
     end
 
     tmp.each do |id, data|
       thash = {"issue" => data}
-      puts thash
+      puts "update ticket with #{thash}"
       put_issue URI("#{@baseurl}/issues/#{id}.json"), thash
     end
   end
 
   def edit_list
     tmp = list_duedate
+    draftFile = "#{@options["cachedir"]}/edit/listedit"
+    draftFileOrig = "#{@options["cachedir"]}/edit/listedit.orig"
 
-    editDir = "#{@options["cachedir"]}/edit"
-    FileUtils.mkdir_p(editDir)
-    draftFile = "#{editDir}/listedit"
-    draftFileOrig = "#{editDir}/listedit.orig"
-    File.write(draftFile, tmp)
-    system "cp #{draftFile} #{draftFileOrig} ; #{ENV["EDITOR"]} #{draftFile}"
-    ret = system("diff #{draftFile} #{draftFileOrig} > /dev/null")
-    if ret == true
-      puts "no change on draft file."
-      return
-    else
-      puts "we have some change"
-    end
-
-    list_input draftFile
+    prepareDraft draftFile, tmp
+    ret = editDraft(draftFile)
+    ret = `diff -U1 #{draftFileOrig} #{draftFile} | grep ^+ | grep -v '^+++ '`
+    list_input ret.split("\n")
   end
 
   def list_id
