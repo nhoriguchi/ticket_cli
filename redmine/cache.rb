@@ -7,7 +7,7 @@ module RedmineCache
   def updateCache
     cacheFile = @options["cachedir"] + "/cacheData"
     if FileTest.exist? cacheFile
-      cacheData = JSON.parse(File.read(cacheFile))
+      @cacheData = cacheData = JSON.parse(File.read(cacheFile))
       cacheData, updated = updateLatestCache(cacheData)
       return cacheData if updated == false
     else

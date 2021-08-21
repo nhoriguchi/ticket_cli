@@ -43,7 +43,11 @@ class Redmine
       @baseurl = "http://#{@serverconf["baseurl"]}:#{@serverconf["baseport"]}/#{@serverconf["baseapi"]}"
     end
 
-    @cacheData = updateCache
+    begin
+      @cacheData = updateCache
+    rescue
+      puts "updateCache failed, maybe connection is temporary unavailable now."
+    end
     @options[:logger].debug("cache update done")
     # TODO: update metadata only when unknown key is found in ticket cache
     updateMetaCache

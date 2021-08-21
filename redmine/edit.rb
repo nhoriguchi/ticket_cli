@@ -15,7 +15,11 @@ module RedmineCmdEdit
 
     id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
-    updateCacheIssue id
+    begin
+      updateCacheIssue id
+    rescue
+      puts "updateCacheIssue failed, maybe connection is temporary unavailable now."
+    end
 
     @issueOrigin = @cacheData[id]
 
@@ -81,7 +85,7 @@ module RedmineCmdEdit
 
     duration = getDraftDuration(draftFile, ((t2 - t1).to_i / 60))
     createTimeEntry id, duration
-    puts "created time_entry (#{duration} min) to ID  #{id}"
+    puts "created time_entry (#{duration} min) to ID #{id}"
 
     # update succeeded so clean up draft files
     cleanupDraft draftFile
