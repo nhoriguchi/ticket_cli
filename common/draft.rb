@@ -181,6 +181,8 @@ module Common
 
           if tmp =~ /(\d+):(\d{2})/
             tmp2 = $1.to_i * 60 + $2.to_i
+          elsif tmp == ""
+            return duration
           else
             tmp2 = tmp.to_i
           end

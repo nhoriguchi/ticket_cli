@@ -84,6 +84,7 @@ module RedmineCmdEdit
     t2 = Time.now
 
     duration = getDraftDuration(draftFile, ((t2 - t1).to_i / 60))
+    @options[:logger].debug("duration #{duration}, diff #{((t2 - t1).to_i / 60)}")
     createTimeEntry id, duration
     puts "created time_entry (#{duration} min) to ID #{id}"
 
