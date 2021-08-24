@@ -151,7 +151,7 @@ module RedmineCmdWiki
         input = STDIN.gets.chomp
         if input[0] == 'n' or input[0] == 'N'
           cleanupDraft draftFile
-          puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/#{id}.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
+          puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/#{wikiid}.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
           return
         elsif input[0] == 's' or input[0] == 'S'
           return
@@ -173,7 +173,7 @@ module RedmineCmdWiki
   end
 
   def uploadNewWiki proj, wikiname, draftData
-    uri = URI.encode("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
+    uri = URI("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
     @options[:logger].debug(draftData)
     response = put_issue uri, draftData
 
