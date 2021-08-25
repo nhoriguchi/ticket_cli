@@ -5,11 +5,15 @@ require 'differ'
 module RedmineCmdEdit
   def edit args
     allyes = false
+    inputfile = nil
 
     OptionParser.new do |opts|
       opts.banner = "Usage: ticket edit [-options] id"
       opts.on("--all-yes") do
         allyes = true
+      end
+      opts.on("-f file", "--file") do |f|
+        inputfile = f
       end
     end.order! args
 
@@ -19,6 +23,11 @@ module RedmineCmdEdit
       updateCacheIssue id
     rescue
       puts "updateCacheIssue failed, maybe connection is temporary unavailable now."
+    end
+
+    if inputfile
+      uploadInputfile id, inputfile
+      return
     end
 
     @issueOrigin = @cacheData[id]
@@ -210,5 +219,18 @@ module RedmineCmdEdit
   def default_state tracker
     tmp = @metaCacheData["trackers"].find {|t| t["id"] == tracker}
     return tmp["default_status"]["id"]
+  end
+
+  def uploadInputfile id, inputfile
+    uploadData, duration = parseDraftData inputfile
+    begin
+      apply_ticket_rules uploadData
+    rescue
+    end
+    uploadIssue id, uploadData
+    if duration
+      createTimeEntry id, duration
+      puts "created time_entry (#{duration} min) to ID #{id}"
+    end
   end
 end

@@ -3,6 +3,7 @@
 module RedmineCmdNew
   def new args
     allyes = false
+    inputfile = nil
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$0} [-options]"
@@ -14,8 +15,16 @@ module RedmineCmdNew
       end
       opts.on("-s", "--subject") do
       end
+      opts.on("-f file", "--file") do |f|
+        inputfile = f
+      end
       # TODO: more options
     end.order! args
+
+    if inputfile
+      uploadNewInputfile inputfile
+      return
+    end
 
     draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
     prepareDraft draftFile, draftNewData.join("\n")
@@ -94,5 +103,19 @@ module RedmineCmdNew
       raise response.value
     end
     return response
+  end
+
+  def uploadNewInputfile inputfile
+    uploadData, duration = parseDraftData inputfile
+    response = uploadNewIssue uploadData
+    if duration
+      begin
+        resbody = response.body.to_json
+        newid = resbody["issue"]["id"]
+        createTimeEntry newid, duration
+        puts "created time_entry (#{duration} min) to ID #{id}"
+      rescue
+      end
+    end
   end
 end
