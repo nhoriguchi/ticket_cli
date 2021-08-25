@@ -16,7 +16,7 @@ module RedmineCmdShow
     updateCacheIssue id
 
     # borrowed from RedmineCmdEdit
-    puts draftData(id)
+    puts draftIssueData(id)
 
     if journal == true
       puts "=========== TODO: JOURNAL SHOULD BE DISPLAYED ============"

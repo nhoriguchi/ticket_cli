@@ -219,4 +219,40 @@ module Common
       end
     end
   end
+
+  def parseWikiDraftData draftFile
+    afterEdit = File.read(draftFile).split("\n")
+    afterDescription = []
+    metaline = 0
+    comment_part = false
+    comment = []
+
+    afterEdit.each do |line|
+      if metaline == 0
+        if line == "---"
+          metaline = 1
+        else
+          afterDescription << line
+        end
+      elsif metaline == 1
+        if line == "---"
+          metaline = 2
+          comment_part = false
+        elsif line =~ /^#/
+          # skip comment line
+        elsif line =~ /^@@@/
+          comment_part = true
+        elsif comment_part == true
+          comment << line
+        end
+      else
+        afterDescription << line
+      end
+    end
+
+    res = {"wiki_page" => {}}
+    res["wiki_page"]["text"] = afterDescription.join("\n")
+    res["wiki_page"]["comments"] = comment.join("\n") if ! comment.empty?
+    return res
+  end
 end

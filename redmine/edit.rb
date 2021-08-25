@@ -34,7 +34,7 @@ module RedmineCmdEdit
 
     # TODO: キャッシュディレクトリは draft.rb 側で参照するように
     draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
-    prepareDraft draftFile, draftData(id).join("\n")
+    prepareDraft draftFile, draftIssueData(id)
 
     asyncUpdateMetaCache
 
@@ -136,7 +136,7 @@ module RedmineCmdEdit
 
   private
 
-  def draftData id
+  def draftIssueData id
     tmp = @cacheData[id]
 
     type = tmp["tracker"]["name"]
@@ -175,7 +175,7 @@ module RedmineCmdEdit
     editdata << "---"
     editdata << description.gsub(/\r\n?/, "\n")
     editdata << ""
-    return editdata
+    return editdata.join("\n")
   end
 
   def apply_ticket_rules uploadData

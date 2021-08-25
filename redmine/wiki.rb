@@ -135,7 +135,7 @@ module RedmineCmdWiki
       params = {"key" => @serverconf["token"]}
       response = __get_response(uri, params)["wiki_page"]
       # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
-      prepareDraft draftFile, response["text"]
+      prepareDraft draftFile, draftWikiData(response["text"])
       check_upload_draft draftFile
     rescue
       puts "Failed to download wikipage from server. so only local cache can be edittable."
@@ -143,6 +143,7 @@ module RedmineCmdWiki
 
     while true
       editDraft draftFile
+      uploadData = parseWikiDraftData draftFile
 
       if allyes == true
         break
@@ -162,7 +163,7 @@ module RedmineCmdWiki
         end
       end
 
-      uploadData = {"wiki_page" => {"text" => File.read(draftFile)}}
+      @options[:logger].debug(uploadData)
       response = uploadNewWiki project, wikiname, uploadData
       break
     end
@@ -199,5 +200,15 @@ module RedmineCmdWiki
     @wiki_pages.each do |wiki|
       puts "#{wiki["wpid"]}\t#{wiki["version"]}\t#{wiki["updated_on"]}\t#{wiki["title"]}"
     end
+  end
+
+  def draftWikiData text
+    editdata = []
+    editdata << "---"
+    editdata << "@@@ lines from here to next '---' line is considered as note/comment"
+    editdata << "---"
+    editdata << text
+    editdata << ""
+    return editdata.join("\n")
   end
 end
