@@ -28,13 +28,13 @@ module RedmineCmdList
       opts.on("-i", "--sort-id") do
         @config[:order] = "id"
       end
-      opts.on("-d", "--sort-update-date") do
+      opts.on("-u", "--sort-update-date") do
         @config[:order] = "date"
       end
       opts.on("-c", "--show-closed") do
         @config[:closed] = true
       end
-      opts.on("--show-duedate") do
+      opts.on("-d", "--show-duedate") do
         @config[:duedate] = true
         @config[:order] = "duedate"
       end
@@ -88,16 +88,16 @@ module RedmineCmdList
 
     begin
       if @config[:listinput]
-        raise
+        raise "not implemented yet"
         # list_input @config[:listinput]
       elsif @config[:edit] == true
         edit_list
       elsif @config[:duedate] == true
         puts list_duedate
       elsif @config[:order] == "id"
-        list_id
+        puts list_id
       else
-        list_update_date
+        puts list_update_date
       end
     rescue
     end
@@ -106,8 +106,8 @@ module RedmineCmdList
   def list_input input
     tmp = {}
     input.each do |line|
-      if line =~ /^\+(\d+)\s+(\d+)\s+(\w+)\s+(\w+)\s+([\d\-\/\+]+)\s+\(([^\)]+)\)\s+(.+)\s*$/
-        id, done_ratio, tracker, status, duedate, project, subject = $1, $2, $3, $4, $5, $6, $7
+      if line =~ /^\+(\d+)\s+(\d+)\s+([\d\.\-]+)\s+(\w+)\s+(\w+)\s+([\d\-\/\+]+)\s+\(([^\)]+)\)\s+(.+)\s*$/
+        id, done_ratio, estimatedhours, tracker, status, duedate, project, subject = $1, $2, $3, $4, $5, $6, $7, $8
 
         if duedate == "-"
           duedate = nil
@@ -123,18 +123,21 @@ module RedmineCmdList
           "project_id" => parse_projectspec(project),
           "subject" => subject,
         }
+        if estimatedhours != "-"
+          tmp[id]["estimated_hours"] = estimatedhours.to_f
+        end
       end
     end
 
     tmp.each do |id, data|
       thash = {"issue" => data}
-      puts "update ticket with #{thash}"
+      puts "update ticket #{id} with #{thash}"
       put_issue URI("#{@baseurl}/issues/#{id}.json"), thash
     end
   end
 
   def edit_list
-    tmp = list_duedate
+    tmp = get_format_list("%-4d %3d %4s %-6s %-6s %-10s (%s) %s", ["id", "done_ratio", "estimated_hours", "tracker.name", "status.name", "due_date", "project.name", "subject"])
     draftFile = "#{@options["cachedir"]}/edit/listedit"
     draftFileOrig = "#{@options["cachedir"]}/edit/listedit.orig"
 
@@ -146,39 +149,30 @@ module RedmineCmdList
   end
 
   def list_id
-    @keys.each do |k|
-      c = @cacheData[k]
-      list_format1 k, c["done_ratio"], c["tracker"]["name"], c["status"]["name"], c["project"]["name"], c["subject"]
-    end
+    get_format_list("%-4d %3d %-6s %-6s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "project.name", "subject"])
   end
 
   def list_update_date
-    @keys.each do |k|
-      c = @cacheData[k]
-      list_format2 c["id"], c["done_ratio"], c["tracker"]["name"], c["status"]["name"], c["updated_on"], c["project"]["name"], c["subject"]
-    end
+    get_format_list("%-4d %3d %-6s %-6s %s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "updated_on", "project.name", "subject"])
   end
 
   def list_duedate
+    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "subject"])
+  end
+
+  def accessHash h, elms
+    tmp = h
+    elms.each do |elm|
+      tmp = tmp[elm]
+    end
+    return "-" if tmp.nil?
+    return tmp
+  end
+
+  def get_format_list fmt, columns
     tmp = @keys.map do |k|
-      c = @cacheData[k]
-      duedate = c["due_date"]
-      duedate = "-" if duedate == nil
-      list_format3 c["id"], c["done_ratio"], c["tracker"]["name"], c["status"]["name"], duedate, c["project"]["name"], c["subject"]
+      fmt % columns.map {|cl| accessHash(@cacheData[k], cl.split("."))}
     end
     tmp.join("\n")
-  end
-
-  def list_format1 id, ratio, tracker, status, project, subject
-    printf "%-4d %3d %-6s %-6s (%s) %s\n", id, ratio, tracker[0..5], status[0..5], project, subject
-  end
-
-  def list_format2 id, ratio, tracker, status, updated, project, subject
-    printf "%-4d %3d %-6s %-6s %s (%s) %s\n", id, ratio, tracker[0..5], status[0..5], updated, project, subject
-  end
-
-  def list_format3 id, ratio, tracker, status, duedate, project, subject
-    tmp = "%-4d %3d %-6s %-6s %-10s (%s) %s" % [id, ratio, tracker[0..5], status[0..5], duedate, project, subject]
-    return tmp
   end
 end
