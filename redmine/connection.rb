@@ -2,6 +2,27 @@
 
 require 'openssl'
 require 'json'
+require 'cgi'
+
+module URI
+  class << self
+    alias :_parse :parse
+
+    def parse a, original=false
+      return self._parse a if original
+
+      ret = ""
+      a.split(//).each do |c|
+        if  /[-_.!~*'()a-zA-Z0-9;\/\?:@&=+$,%#]/ =~ c
+          ret.concat(c)
+        else
+          ret.concat(CGI.escape(c))
+        end
+      end
+      return self._parse ret
+    end
+  end
+end
 
 module RedmineConnection
   private

@@ -174,7 +174,7 @@ module RedmineCmdWiki
   end
 
   def uploadNewWiki proj, wikiname, draftData
-    uri = URI("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
+    uri = URI.parse("#{@baseurl}/projects/#{proj}/wiki/#{wikiname}.json")
     @options[:logger].debug(draftData)
     response = put_issue uri, draftData
 
