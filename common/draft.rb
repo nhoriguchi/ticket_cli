@@ -97,8 +97,6 @@ module Common
         res["issue"]["parent_issue_id"] = $1 == "null" ? nil : $1.to_i
       when /^assigned:\s*(.*?)\s*$/i
         res["issue"]["assigned_to_id"] = parse_userspec($1)
-        # pp @metaCacheData["users"]
-        # p res["issue"]["assigned_to_id"]
       when /^duration:\s*(.*?)\s*$/i
         tmp = $1
         if tmp =~ /(\d+):(\d{2})/
@@ -222,6 +220,7 @@ module Common
 
   def parseWikiDraftData draftFile
     afterEdit = File.read(draftFile).split("\n")
+    afterMeta = []
     afterDescription = []
     metaline = 0
     comment_part = false
@@ -244,6 +243,8 @@ module Common
           comment_part = true
         elsif comment_part == true
           comment << line
+        else
+          afterMeta << line
         end
       else
         afterDescription << line
@@ -251,6 +252,16 @@ module Common
     end
 
     res = {"wiki_page" => {}}
+
+    afterMeta.each do |line|
+      case line
+      when /^wikiname:\s*(.*?)\s*$/i
+        res["wiki_page"]["title"] = $1
+      else
+        raise "invalid metadata line #{line}"
+      end
+    end
+
     res["wiki_page"]["text"] = afterDescription.join("\n")
     res["wiki_page"]["comments"] = comment.join("\n") if ! comment.empty?
     return res
