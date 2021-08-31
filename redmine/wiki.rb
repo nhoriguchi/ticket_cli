@@ -198,7 +198,7 @@ module RedmineCmdWiki
   def print_wiki_pages
     puts "WikiID\tVersion\tupdated_on\tWikiTitle"
     @wiki_pages.each do |wiki|
-      puts "#{wiki["wpid"]}\t#{wiki["version"]}\t#{wiki["updated_on"]}\t#{wiki["title"]}"
+      puts "#{wiki["wpid"]}\t#{wiki["version"]}\t#{Time.parse(wiki["updated_on"]).getlocal.strftime("%Y/%m/%d %H:%M")}\t#{wiki["title"]}"
     end
   end
 

@@ -171,7 +171,13 @@ module RedmineCmdList
 
   def get_format_list fmt, columns
     tmp = @keys.map do |k|
-      fmt % columns.map {|cl| accessHash(@cacheData[k], cl.split("."))}
+      fmt % columns.map do |cl|
+        if cl == "updated_on"
+          Time.parse(@cacheData[k][cl]).getlocal.strftime("%Y/%m/%d %H:%M")
+        else
+          accessHash(@cacheData[k], cl.split("."))
+        end
+      end
     end
     tmp.join("\n")
   end
