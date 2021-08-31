@@ -21,7 +21,10 @@ module RedmineCmdStatus
         when /^\d+-\d+$/
           # draft for wiki pages
           load_wiki_pages
-          wikiname = @wiki_pages.find {|a| a["wpid"] == tid}["title"]
+
+          tmp = @wiki_pages.find {|a| a["wpid"] == tid}
+          next if tmp.nil?
+          wikiname = tmp["title"]
           puts "  #{tid}: #{wikiname}"
         when "new"
           # draft for new ticket
