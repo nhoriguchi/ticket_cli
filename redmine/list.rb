@@ -63,7 +63,7 @@ module RedmineCmdList
 
     if args.size > 0
       @cacheData.select! do |k, v|
-        args.any? {|arg| parse_projectspec(arg) == v["project"]["id"]}
+        args.any? {|arg| parse_projectspec(arg).to_i == v["project"]["id"]}
       end
     end
 

@@ -178,4 +178,28 @@ module RedmineCache
     tmp = DateTime.parse(datespec)
     tmp.strftime("%Y-%m-%d")
   end
+
+  def status_name statusspec
+    stid = parse_statusspec statusspec
+    @metaCacheData["issue_statuses"].find {|a| a["id"] == stid}["name"]
+  end
+
+  def tracker_name trackerspec
+    trid = parse_trackerspec trackerspec
+    @metaCacheData["trackers"].find {|a| a["id"] == trid}["name"]
+  end
+
+  def user_name userspec
+    usid = parse_userspec userspec
+    @metaCacheData["users"].find {|a| a["id"] == usid}["login"]
+  end
+
+  def project_name projectspec
+    begin
+      pjid = parse_projectspec projectspec
+      @metaCacheData["projects"].find {|a| a["id"].to_s == pjid}["name"]
+    rescue
+      return ""
+    end
+  end
 end
