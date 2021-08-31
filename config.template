@@ -1,0 +1,38 @@
+logdir: /var/log/ticket
+cachedir: ~/.cache/ticket
+defaultserver: main
+
+servers:
+  main:
+    name: <description>
+    type: redmine
+    baseurl: <url>
+    baseport: <port>
+    baseapi: <baseapi>
+    token:
+    format: md
+    setting:
+      userlist: true
+      defaulttracker: "Task"
+      issuerules:
+        autowip: "WIP"
+        autostartdate: true
+        closeclearpriority: true
+        setduedateonclose: true
+
+  sub:
+    name: <description>
+    type: redmine
+    baseurl: <url>
+    baseport: <port>
+    baseapi: <baseapi>
+    token:
+    format: md
+    setting:
+      userlist: true
+      defaulttracker: "Task"
+      issuerules:
+        autowip: "WIP"
+        autostartdate: true
+        closeclearpriority: true
+        setduedateonclose: true
