@@ -76,8 +76,9 @@ module RedmineCmdNew
     editdata << "---"
     editdata << "Project: "
     editdata << "Subject: "
-    editdata << "Status: New" # TODO: set default state properly
-    editdata << "Type: Task"  # TODO: set default tracker properly
+    editdata << "Status: " # TODO: set default state properly
+    type = @serverconf["setting"]["defaulttracker"] if @serverconf["setting"]["defaulttracker"]
+    editdata << "Type: #{type}"  # TODO: set default tracker properly
     editdata << "EstimatedTime: 1"
     editdata << "StartDate: "
     editdata << "DueDate: "
