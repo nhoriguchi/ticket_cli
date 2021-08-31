@@ -110,4 +110,6 @@ class MainCommand
   end
 end
 
-MainCommand.cmd ARGV
+if $0 == __FILE__
+  MainCommand.cmd ARGV
+end
