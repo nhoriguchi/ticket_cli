@@ -12,6 +12,9 @@ module RedmineCmdShow
       opts.on("-j", "--journal") do
         journal = true
       end
+      opts.on("-d", "--only-description") do
+        @options[:onlyDescription] = true
+      end
     end.order! args
 
     id = args[0]

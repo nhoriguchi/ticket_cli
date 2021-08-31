@@ -152,6 +152,10 @@ module RedmineCmdEdit
     parent = tmp["parent"].nil? ? "null" : tmp["parent"]["id"]
     assignedTo = tmp["assigned_to"].nil? ? "null" : tmp["assigned_to"]["name"]
 
+    if @options[:onlyDescription] == true
+      return description.gsub(/\r\n?/, "\n")
+    end
+
     editdata = []
     editdata << "---"
     editdata << "ID: #{id}"
