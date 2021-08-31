@@ -87,6 +87,7 @@ class MainCommand
       exit
     end
 
+    @options["cachedir"] = File.expand_path @options["cachedir"]
     @options["cachedir"] += "/#{@options[:server]}"
     case tmp["servers"][@options[:server]]["type"]
     when "redmine"
