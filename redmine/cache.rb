@@ -28,7 +28,7 @@ module RedmineCache
     }
 
     response = __get_response "#{@baseurl}/issues.json", params
-    @cacheData[id] = response["issues"][0]
+    return response["issues"][0]
   end
 
   def updateLatestCache cacheData

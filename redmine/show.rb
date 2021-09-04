@@ -19,9 +19,9 @@ module RedmineCmdShow
 
     id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
-    updateCacheIssue id
+    @cacheData[id] = updateCacheIssue id
 
-    puts draftIssueData(id)
+    puts draftIssueData(id, @cacheData[id])
 
     if journal == true
       @separator = '@' * 72

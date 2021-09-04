@@ -1,7 +1,5 @@
 # coding: utf-8
 
-require 'differ'
-
 module RedmineCmdEdit
   def edit args
     allyes = false
@@ -20,7 +18,7 @@ module RedmineCmdEdit
     id = args[0]
     raise "issue #{id} not found" if @cacheData[id].nil?
     begin
-      updateCacheIssue id
+      @cacheData[id] = updateCacheIssue id
     rescue
       puts "updateCacheIssue failed, maybe connection is temporary unavailable now."
     end
@@ -34,7 +32,7 @@ module RedmineCmdEdit
 
     # TODO: キャッシュディレクトリは draft.rb 側で参照するように
     draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
-    prepareDraft draftFile, draftIssueData(id)
+    prepareDraft draftFile, draftIssueData(id, @cacheData[id])
 
     asyncUpdateMetaCache
 
@@ -73,16 +71,9 @@ module RedmineCmdEdit
       conflict = checkConflict id
       if not conflict.empty?
         open(draftFile, 'a') do |f|
+          f.puts ""
           f.puts "### CONFLICT ### YOU NEED TO CONFLICET THE BELOW DIFF MANUALLY"
-          conflict.each do |k, v|
-            if k != "description"
-              f.puts "#+#{k}: #{v}"
-            end
-          end
-          if conflict["description"]
-            tmp = Differ.diff_by_char(uploadData["issue"]["description"], @issueOrigin["description"].tr("\r", ''))
-            f.puts tmp.format_as(:ascii)
-          end
+          f.puts conflict
         end
         next
       end
@@ -102,24 +93,13 @@ module RedmineCmdEdit
   end
 
   def checkConflict id
-    params = {
-      "status_id" => "*",
-      "include" => "relations,attachments",
-      "key" => @serverconf["token"]
-    }
+    draftFileOrig = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.orig"
+    conflictFile = "#{@options["cachedir"]}/edit/#{id}.conflictcheck.#{@serverconf["format"]}"
+    prepareDraft conflictFile, draftIssueData(id, updateCacheIssue(id))
 
-    server = __get_response("#{@baseurl}/issues/#{id}.json", params)["issue"]
-    conflict = {}
-
-    [ "project", "tracker", "status", "priority", "author", "assigned_to", "subject", "description", "start_date", "due_date", "done_ratio", "is_private", "estimated_hours", "created_on", "updated_on", "closed_on", "attachments"].each do |elm|
-      if server[elm] != @issueOrigin[elm]
-        conflict[elm] = @issueOrigin[elm].tr("\r", '')
-      end
-    end
-
-    @issueOrigin = server
-
-    return conflict
+    ret = `diff -U3 #{draftFileOrig} #{conflictFile}`
+    system "mv #{conflictFile} #{draftFileOrig}"
+    return ret
   end
 
   def uploadIssue id, draftData
@@ -136,8 +116,8 @@ module RedmineCmdEdit
 
   private
 
-  def draftIssueData id
-    tmp = @cacheData[id]
+  def draftIssueData id, data
+    tmp = data
 
     type = tmp["tracker"]["name"]
     priority = tmp["priority"]["name"]
@@ -174,7 +154,7 @@ module RedmineCmdEdit
     rescue
     end
     editdata << "Duration:"
-    editdata << "# OpenedOn: #{Time.now.strftime("%Y-%m-%d %H:%M")}"
+    # editdata << "# OpenedOn: #{Time.now.strftime("%Y-%m-%d %H:%M")}"
     editdata << "@@@ lines from here to next '---' line is considered as note/comment"
     editdata << "---"
     editdata << description.gsub(/\r\n?/, "\n")

@@ -14,4 +14,4 @@
 # 依存性
 
 - Ruby を利用しているので、ruby, rubygems をインストールする必要がある。
-- `gem install differ` でパッケージが必要。
+- `gem install diffy nokogiri` 等で適宜パッケージがインストールしておく必要がある。
