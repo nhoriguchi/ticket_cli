@@ -104,10 +104,10 @@ module RedmineCmdShow
       tmp << "Assigned: '#{tmp2["old_value"]}' => '#{tmp2["new_value"]}'"
     end
 
-    tmp = [tmp.map{|l| "  " + l}.join("\n")]
+    tmp = [tmp.map{|l| "  " + l}.join("\n")] if not tmp.empty?
 
     if tmp2 = find_journal_attr(details, "description")
-      tmp << ""
+      tmp << ">>>>> diffs in description"
       tmp3 = Diffy::Diff.new(tmp2["old_value"], tmp2["new_value"], :context => 3).to_s.split("\n")
       tmp3.delete("\\ No newline at end of file")
       tmp << tmp3
