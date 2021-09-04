@@ -40,7 +40,11 @@ module RedmineCmdNew
       else
         puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
         input = STDIN.gets.chomp
-        if input[0] == 'n' or input[0] == 'N' or input[0] == 's' or input[0] == 'S'
+        if input[0] == 'n' or input[0] == 'N'
+          cleanupDraft draftFile
+          puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/new.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
+          return
+        elsif input[0] == 's' or input[0] == 'S'
           return
         elsif input[0] == 'y' or input[0] == 'Y'
           true
