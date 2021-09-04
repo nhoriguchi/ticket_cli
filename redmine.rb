@@ -16,6 +16,7 @@ require_relative "./redmine/edit.rb"
 require_relative "./redmine/status.rb"
 require_relative "./redmine/relation.rb"
 require_relative "./redmine/wiki.rb"
+require_relative "./redmine/file.rb"
 
 class Redmine
   include Common
@@ -31,6 +32,7 @@ class Redmine
   include RedmineCmdStatus
   include RedmineCmdRelation
   include RedmineCmdWiki
+  include RedmineCmdFile
 
   def initialize options, cmd, args
     @options = options
@@ -73,7 +75,7 @@ class Redmine
     elsif cmd == "search"
     elsif cmd == "tree"
     elsif cmd == "file"
-      attach_file args
+      file args
     else
       puts "see `ticket -h`"
       exit
