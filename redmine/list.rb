@@ -19,6 +19,7 @@ module RedmineCmdList
       :listinput => nil,
       :edit => false,
       :reversed => false,
+      :subproject => false,
     }
 
     listinput = {}
@@ -53,6 +54,9 @@ module RedmineCmdList
       opts.on("-r", "--reverse", "逆順で表示") do |f|
         @config[:reversed] = true
       end
+      opts.on("-s", "--subproject") do
+        @config[:subproject] = true
+      end
     end.order! args
 
     asyncUpdateMetaCache
@@ -62,8 +66,29 @@ module RedmineCmdList
     end
 
     if args.size > 0
-      @cacheData.select! do |k, v|
-        args.any? {|arg| parse_projectspec(arg).to_i == v["project"]["id"]}
+      if @config[:subproject] == true
+        pjtree = get_project_tree
+
+        tmp1 = tmp2 = args.map {|arg| parse_projectspec(arg).to_i}
+        count = 10
+        while count > 0
+          tmp1.each do |pjid|
+            next if pjtree[pjid].nil?
+            tmp2 += pjtree[pjid]
+          end
+          tmp2 = tmp2.uniq.sort
+          break if tmp1 == tmp2
+          tmp1 = tmp2
+          count -= 1
+        end
+
+        @cacheData.select! do |k, v|
+          tmp2.any? {|arg| arg == v["project"]["id"]}
+        end
+      else
+        @cacheData.select! do |k, v|
+          args.any? {|arg| parse_projectspec(arg).to_i == v["project"]["id"]}
+        end
       end
     end
 
