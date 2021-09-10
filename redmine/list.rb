@@ -174,15 +174,15 @@ module RedmineCmdList
   end
 
   def list_id
-    get_format_list("%-4d %3d %-6s %-6s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "project.name", "subject"])
+    get_format_list("%-4d %3d %-6s %-6s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "project.name", "relations", "subject"])
   end
 
   def list_update_date
-    get_format_list("%-4d %3d %-6s %-6s %s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "updated_on", "project.name", "subject"])
+    get_format_list("%-4d %3d %-6s %-6s %s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "updated_on", "project.name", "relations", "subject"])
   end
 
   def list_duedate
-    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) %s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "subject"])
+    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) \s%s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "relations", "subject"])
   end
 
   def accessHash h, elms
@@ -194,16 +194,30 @@ module RedmineCmdList
     return tmp
   end
 
+  def rel_short_string id, rel
+    if id.to_i == rel["issue_to_id"]
+      return "#{rel["issue_id"]}#{get_short_relation(rel["relation_type"])}"
+    else
+      return "#{get_short_relation(rel["relation_type"])}#{rel["issue_to_id"]}"
+    end
+  end
+
   def get_format_list fmt, columns
     tmp = @keys.map do |k|
       fmt % columns.map do |cl|
         if cl == "updated_on"
           Time.parse(@cacheData[k][cl]).getlocal.strftime("%Y/%m/%d %H:%M")
+        elsif cl == "relations"
+          if @cacheData[k][cl].empty?
+            ""
+          else
+            "[#{@cacheData[k][cl].map {|rel| rel_short_string(k, rel)}.join(",")}] "
+          end
         else
           accessHash(@cacheData[k], cl.split("."))
         end
       end
     end
-    tmp.join("\n")
+    return tmp.join("\n")
   end
 end

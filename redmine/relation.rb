@@ -79,7 +79,7 @@ module RedmineCmdRelation
     case str
     when "->"
       return "procedes"
-    when"<-"
+    when "<-"
       return "follows"
     when "-o"
       return "blocks"
@@ -93,6 +93,33 @@ module RedmineCmdRelation
       return "relates"
     when "=="
       return "duplicates"
+    else
+      return str
+    end
+  end
+
+  def get_short_relation str
+    if not ["->", "<-", "-o", "o-", "-c", "c-", "--", "==", "precedes", "follows", "blocks", "blocked", "copied_to", "copied_from", "relates", "duplicates"].include? str
+      raise "invalid relation: #{str}"
+    end
+
+    case str
+    when "procedes"
+      return "->"
+    when "follows"
+      return "<-"
+    when "blocks"
+      return "-o"
+    when "blocked"
+      return "o-"
+    when "copied_to"
+      return "-c"
+    when "copied_from"
+      return "c-"
+    when "relates"
+      return "--"
+    when "duplicates"
+      return "=="
     else
       return str
     end
