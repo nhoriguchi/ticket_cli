@@ -94,7 +94,7 @@ module RedmineCmdEdit
 
   def checkConflict id
     draftFileOrig = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.orig"
-    conflictFile = "#{@options["cachedir"]}/edit/#{id}.conflictcheck.#{@serverconf["format"]}"
+    conflictFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.conflictcheck"
     prepareDraft conflictFile, draftIssueData(id, updateCacheIssue(id))
 
     ret = `diff -U3 #{draftFileOrig} #{conflictFile}`

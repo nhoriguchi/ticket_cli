@@ -26,6 +26,7 @@ module Common
     delDir = "#{@options["cachedir"]}/deleted_drafts"
     FileUtils.mkdir_p(delDir)
     FileUtils.mv([path, path + ".orig"], delDir)
+    FileUtils.rm([path + ".conflictcheck"], :force => true)
   end
 
   # TODO: Redmine 固有へ
