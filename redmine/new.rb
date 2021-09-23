@@ -4,6 +4,7 @@ module RedmineCmdNew
   def new args
     allyes = false
     inputfile = nil
+    draftFile = nil
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$0} [-options]"
@@ -18,6 +19,9 @@ module RedmineCmdNew
       opts.on("-f file", "--file") do |f|
         inputfile = f
       end
+      opts.on("-d draftFile", "--draftfile") do |f|
+        draftFile = f
+      end
       # TODO: more options
     end.order! args
 
@@ -26,8 +30,19 @@ module RedmineCmdNew
       return
     end
 
-    draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
-    prepareDraft draftFile, draftNewData.join("\n")
+    # TODO: if you find multiple draft (whose name starts with "new.XXXX"
+    # ask which to use or not use anything.
+    if draftFile.nil?
+      draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
+      prepareDraft draftFile, draftNewData.join("\n")
+    else
+      draftFile = "#{@options["cachedir"]}/edit/#{draftFile}.#{@serverconf["format"]}"
+      draftData = File.read(draftFile).split("\n")
+      if draftData[0] != "---"
+        draftData = draftNewData + draftData
+        File.write(draftFile, draftData.join("\n"))
+      end
+    end
 
     asyncUpdateMetaCache
 
@@ -45,6 +60,13 @@ module RedmineCmdNew
           puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/new.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
           return
         elsif input[0] == 's' or input[0] == 'S'
+          if draftFile == "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
+            puts "Rename draft file? (empty if no): "
+            rename = STDIN.gets.chomp
+            if ! rename.empty?
+              FileUtils.mv("#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}", "#{@options["cachedir"]}/edit/new.#{rename}.#{@serverconf["format"]}")
+            end
+          end
           return
         elsif input[0] == 'y' or input[0] == 'Y'
           true

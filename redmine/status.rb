@@ -26,11 +26,15 @@ module RedmineCmdStatus
           next if tmp.nil?
           wikiname = tmp["title"]
           puts "  #{tid}: #{wikiname}"
-        when "new"
+        when /^new/
           # draft for new ticket
-          draftFile = "#{@options["cachedir"]}/edit/new.#{@serverconf["format"]}"
-          uploadData, duration = parseDraftData draftFile
-          puts "  #{tid}: #{uploadData["issue"]["subject"]}"
+          draftFile = "#{@options["cachedir"]}/edit/#{tid}.#{@serverconf["format"]}"
+          begin
+            uploadData, duration = parseDraftData draftFile
+            puts "  #{tid}: #{uploadData["issue"]["subject"]}"
+          rescue
+            puts "  #{tid}: ..."
+          end
         end
       end
     end
