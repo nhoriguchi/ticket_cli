@@ -78,7 +78,7 @@ module RedmineCmdRelation
 
     case str
     when "->"
-      return "procedes"
+      return "precedes"
     when "<-"
       return "follows"
     when "-o"
@@ -104,7 +104,7 @@ module RedmineCmdRelation
     end
 
     case str
-    when "procedes"
+    when "precedes"
       return "->"
     when "follows"
       return "<-"
