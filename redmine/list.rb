@@ -182,7 +182,7 @@ module RedmineCmdList
   end
 
   def list_duedate
-    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) \s%s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "relations", "subject"])
+    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "relations", "subject"])
   end
 
   def accessHash h, elms
