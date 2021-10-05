@@ -26,7 +26,8 @@ module Common
   def cleanupDraft path
     delDir = "#{@options["cachedir"]}/deleted_drafts"
     FileUtils.mkdir_p(delDir)
-    FileUtils.mv([path, path + ".orig"], delDir)
+    FileUtils.mv([path], delDir) if File.exist? path
+    FileUtils.mv([path + ".orig"], delDir) if File.exist?(path + ".orig")
     FileUtils.rm([path + ".conflictcheck"], :force => true)
   end
 
