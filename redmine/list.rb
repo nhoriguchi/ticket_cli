@@ -22,6 +22,21 @@ module RedmineCmdList
       :subproject => false,
     }
 
+    if @options["listorder"]
+      @options["listorder"].split(/\s+/).each do |elm|
+        if elm =~ /^desc/
+          @config[:reversed] = false
+        elsif elm =~ /^asc/
+          @config[:reversed] = true
+        elsif elm =~ /^update/
+          @config[:order] = "date"
+        elsif elm =~ /^due/
+          @config[:duedate] = true
+          @config[:order] = "duedate"
+        end
+      end
+    end
+
     listinput = {}
 
     OptionParser.new do |opts|
