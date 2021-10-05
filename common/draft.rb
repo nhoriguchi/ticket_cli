@@ -15,7 +15,7 @@ module Common
     draftFileOrig = path + ".orig"
     system "#{ENV["EDITOR"]} #{draftFile}"
     return if ! File.exist? draftFileOrig
-    ret = system("diff #{draftFile} #{draftFileOrig} > /dev/null")
+    ret = system("diff -U3 #{draftFileOrig} #{draftFile}")
     if ret == true
       puts "no change on draft file."
       return false
