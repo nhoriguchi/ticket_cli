@@ -45,6 +45,7 @@ module RedmineCmdEdit
       if allyes == true
         break
       else
+        puts "Current server target is #{@options[:server]}"
         puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
         input = STDIN.gets.chomp
         if input[0] == 'n' or input[0] == 'N'
