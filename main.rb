@@ -31,6 +31,7 @@ class MainCommand
     @options[:server] = ENV['TICKET_SERVER'] if ENV['TICKET_SERVER']
     @options[:insecure] = true if ENV['INSECURE']
     @options[:debug] = true if ENV['DEBUG']
+    @options[:editor] = ENV['EDITOR'] if ENV['EDITOR']
 
     args << '-h' if args.empty?
     OptionParser.new do |opts|

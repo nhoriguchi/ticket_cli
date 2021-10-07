@@ -13,7 +13,8 @@ module Common
   def editDraft path
     draftFile = path
     draftFileOrig = path + ".orig"
-    system "#{ENV["EDITOR"]} #{draftFile}"
+    raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
+    system "#{@options[:editor]} #{draftFile}"
     return if ! File.exist? draftFileOrig
     ret = system("diff -U3 #{draftFileOrig} #{draftFile}")
     if ret == true

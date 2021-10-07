@@ -2,6 +2,7 @@ logdir: /var/log/ticket
 cachedir: ~/.cache/ticket
 defaultserver: main
 listorder: ascending updated_on
+editor: /usr/bin/vi
 
 servers:
   main:
