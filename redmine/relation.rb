@@ -55,6 +55,10 @@ module RedmineCmdRelation
     raise "ticket #{tid} not exist" if @cacheData[tid].nil?
 
     upload_relation sid, {"relation": {"issue_to_id": tid, "relation_type": relation}}
+
+    @cacheData[sid] = updateCacheIssue sid
+    @cacheData[tid] = updateCacheIssue tid
+    saveCache
   end
 
   def upload_relation id, data

@@ -19,6 +19,11 @@ module RedmineCache
     return cacheData
   end
 
+  def saveCache
+    cacheFile = @options["cachedir"] + "/cacheData"
+    File.write(cacheFile, @cacheData.to_json)
+  end
+
   def updateCacheIssue id
     params = {
       "issue_id" => id,

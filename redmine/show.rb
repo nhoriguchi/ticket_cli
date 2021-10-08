@@ -28,6 +28,8 @@ module RedmineCmdShow
       puts @separator
       show_journals id
     end
+
+    saveCache
   end
 
   def show_journals id
