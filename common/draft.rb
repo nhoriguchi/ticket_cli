@@ -24,12 +24,58 @@ module Common
     return true
   end
 
+  def draftPath id
+    "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
+  end
+
+  def draftOrigPath id
+    "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.orig"
+  end
+
+  def editDrafts ids
+    raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
+    puts "#{@options[:editor]} #{ids.map do |id| draftPath id ; end.join(" ")}"
+    system "#{@options[:editor]} #{ids.map do |id| draftPath id ; end.join(" ")}"
+  end
+
+  def diffDrafts ids
+    tmp = []
+    ids.each do |id|
+      tmp << "#################################### #{id} ####################################"
+      a = `diff -U3 -w #{draftOrigPath id} #{draftPath id} | grep -ve '^--- ' -e '^+++ '`
+      if ! a.empty?
+        tmp << a
+      end
+    end
+    if tmp.empty?
+      puts "no change on draft files"
+      return false
+    else
+      puts tmp.join("\n")
+      return true
+    end
+  end
+
   def cleanupDraft path
     delDir = "#{@options["cachedir"]}/deleted_drafts"
     FileUtils.mkdir_p(delDir)
     FileUtils.mv([path], delDir) if File.exist? path
     FileUtils.mv([path + ".orig"], delDir) if File.exist?(path + ".orig")
-    FileUtils.rm([path + ".conflictcheck"], :force => true)
+    FileUtils.rm([path + ".conflictcheck", path + ".conflictcheck.orig"], :force => true)
+  end
+
+  def cancelDrafts ids
+    ids.each do |id|
+      cleanupDraft draftPath(id)
+    end
+  end
+
+  def saveDrafts ids, t1
+    ids.each do |id|
+      if id_type(id) == "ticket"
+        saveDraftDuration draftPath(id), ((Time.now - t1).to_i / 60)
+      end
+    end
   end
 
   # TODO: Redmine 固有へ
@@ -154,6 +200,7 @@ module Common
         end
       end
     end
+    lines << ""
     File.write(draftFile, lines.join("\n"))
   end
 

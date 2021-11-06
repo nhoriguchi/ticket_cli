@@ -85,7 +85,8 @@ module RedmineCmdNew
     # "\\xE3" from ASCII-8BIT to UTF-8 (Encoding::UndefinedConversionError)
     begin
       resbody = response.body.to_json
-      @options[:logger].debug(resbody)
+      # @options[:logger].debug(resbody)
+      puts resbody
       newid = resbody["issue"]["id"]
 
       duration = ((t2 - t1).to_i / 60) if duration.nil?

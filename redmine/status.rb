@@ -3,7 +3,10 @@
 module RedmineCmdStatus
   def status args
     OptionParser.new do |opts|
-      opts.banner = "Usage: ticket [-options]"
+      opts.banner = "Usage: ticket status [-options]"
+      opts.on("-d", "--diff") do
+        @options[:showdiff] = true
+      end
     end.order! args
 
     server = @options["servers"][@options[:server]]
@@ -13,6 +16,12 @@ module RedmineCmdStatus
     puts ""
     drafts = find_saved_draft
     puts "Saved drafts:" if not drafts.empty?
+
+    if @options[:showdiff] == true
+      diffDrafts drafts
+      exit
+    end
+
     drafts.each do |tid|
       if @cacheData[tid]
         puts "  #{tid}: #{@cacheData[tid]["subject"]}"
