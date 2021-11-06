@@ -93,6 +93,7 @@ module RedmineCache
     File.write(metaCacheFile, @metaCacheData.to_json)
   end
 
+  # TODO: sync かどうかを引数制御する?
   def asyncUpdateMetaCache
     Thread.start do
       updateMetaCache true

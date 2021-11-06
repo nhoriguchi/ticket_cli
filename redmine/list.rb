@@ -80,6 +80,7 @@ module RedmineCmdList
       @cacheData.select! {|k, v| is_status_closed(v["status"]["name"]) == false}
     end
 
+    projs = args
     if args.size > 0
       if @config[:subproject] == true
         pjtree = get_project_tree
@@ -97,6 +98,7 @@ module RedmineCmdList
           count -= 1
         end
 
+        projs = tmp2.map {|e| project_name e.to_s}
         @cacheData.select! do |k, v|
           tmp2.any? {|arg| arg == v["project"]["id"]}
         end
@@ -134,12 +136,29 @@ module RedmineCmdList
         edit_list
       elsif @config[:duedate] == true
         puts list_duedate
+        show_wiki_section projs
       elsif @config[:order] == "id"
         puts list_id
+        show_wiki_section projs
       else
         puts list_update_date
+        show_wiki_section projs
       end
     rescue
+    end
+  end
+
+  def show_wiki_section args
+    if args.size > 0
+      puts ''
+      args.map! do |pj|
+        if pj =~ /^\d+$/
+          project_name(pj)
+        else
+          pj
+        end
+      end
+      list_wiki_pages args
     end
   end
 

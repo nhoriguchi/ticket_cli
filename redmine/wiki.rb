@@ -35,14 +35,17 @@ module RedmineCmdWiki
       create_wiki_page args
     elsif wikicmd == "edit"
       edit_wiki_page args
+    elsif wikicmd == "debug"
+      updateWikiCache args
+      pp @wikiCacheData
     else
       raise "invalid subcommand: ticket wiki #{wikicmd}"
     end
   end
 
   def load_wiki_pages
+    # TODO: need refactoring
     return if @loaded == true
-    @wiki_pages = []
     @metaCacheData["projects"].map {|pj| pj["id"].to_s}.each do |proj|
       collect_wiki_pages proj
     end
@@ -54,16 +57,13 @@ module RedmineCmdWiki
       projs = args.map {|a| parse_projectspec(a)}
     else
       # all projects
-      projs = @metaCacheData["projects"].map {|pj| pj["id"].to_s}
+      projs = @metaCacheData["projects"].map {|pj| pj["id"]}
     end
 
-    @wiki_pages = []
-    projs.each do |proj|
-      collect_wiki_pages proj
-    end
-    @wiki_pages = @wiki_pages.sort_by {|w| w["updated_on"]}
-    print_wiki_pages
-    # pp @wiki_pages
+    updateWikiCache projs
+    tmp = @wikiCacheData.select {|k,v| projs.include? v["project_id"]}
+    tmp = tmp.sort_by {|_, v| v["updated_on"]}.map {|k, v| v}
+    print_wiki_pages tmp
   end
 
   def create_wiki_page args
@@ -104,11 +104,8 @@ module RedmineCmdWiki
     raise "Usage: ticket wiki show <WikiID>" if args.size != 1
     wikiid = args[0]
     project = wikiid.split("-")[0]
-
-    @wiki_pages = []
-    collect_wiki_pages project
-    wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
-
+    updateWikiCache [project]
+    wikiname = @wikiCacheData[wikiid]["title"]
     uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
     params = {"key" => @serverconf["token"]}
     response = __get_response(uri, params)["wiki_page"]
@@ -123,12 +120,10 @@ module RedmineCmdWiki
     wikiid = args[0]
     project = wikiid.split("-")[0]
 
-    # TODO: need refactoring
-    @wiki_pages = []
     draftFile = "#{@options["cachedir"]}/edit/#{wikiid}.#{@serverconf["format"]}"
     begin
-      collect_wiki_pages project
-      wikiname = @wiki_pages.find {|a| a["wpid"] == wikiid}["title"]
+      updateWikiCache [project]
+      wikiname = @wikiCacheData[wikiid]["title"]
 
       allyes = false
       uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
@@ -188,16 +183,27 @@ module RedmineCmdWiki
   end
 
   def collect_wiki_pages proj
+    @wikiCacheData = {} if @wikiCacheData.nil?
     params = {"key" => @serverconf["token"]}
     issueAPI = "#{@baseurl}/projects/#{proj}/wiki/index.json"
     response = __get_response issueAPI, params
     tmp = response["wiki_pages"].sort_by {|w| w["created_on"]}
-    @wiki_pages += tmp.each_with_index {|w, i| w["wpid"] = "#{proj}-#{i}"}
+    tmp.each_with_index do |w, i|
+      @wikiCacheData["#{proj}-#{i}"] = w
+      w["project_id"] = proj.to_i
+      w["wpid"] = "#{proj}-#{i}"
+    end
   end
 
-  def print_wiki_pages
+  def get_wikiname id
+    project = id.split("-")[0]
+    collect_wiki_pages project
+    return @wikiCacheData[id]["title"]
+  end
+
+  def print_wiki_pages wikis
     puts "WikiID\tVersion\tupdated_on\tWikiTitle"
-    @wiki_pages.each do |wiki|
+    wikis.each do |wiki|
       puts "#{wiki["wpid"]}\t#{wiki["version"]}\t#{Time.parse(wiki["updated_on"]).getlocal.strftime("%Y/%m/%d %H:%M")}\t#{wiki["title"]}"
     end
   end
@@ -211,5 +217,19 @@ module RedmineCmdWiki
     editdata << text
     editdata << ""
     return editdata.join("\n")
+  end
+
+  def updateWikiCache proj=[]
+    wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
+    if FileTest.exist? wikiCacheFile
+      @wikiCacheData = JSON.parse(File.read(wikiCacheFile))
+      proj.each do |pj|
+        collect_wiki_pages pj
+      end
+    else
+      FileUtils.mkdir_p(@options["cachedir"])
+      load_wiki_pages
+    end
+    File.write(wikiCacheFile, @wikiCacheData.to_json)
   end
 end

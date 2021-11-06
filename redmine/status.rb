@@ -24,17 +24,15 @@ module RedmineCmdStatus
 
     drafts.each do |tid|
       if @cacheData[tid]
-        puts "  #{tid}: #{@cacheData[tid]["subject"]}"
+        puts "  #{tid}: (#{@cacheData[tid]["project"]["name"]}) #{@cacheData[tid]["subject"]}"
       else
         case tid
         when /^\d+-\d+$/
-          # draft for wiki pages
-          load_wiki_pages
-
-          tmp = @wiki_pages.find {|a| a["wpid"] == tid}
-          next if tmp.nil?
-          wikiname = tmp["title"]
-          puts "  #{tid}: #{wikiname}"
+          updateWikiCache
+          wikiname = @wikiCacheData[tid]["title"]
+          pjid = @wikiCacheData[tid]["project_id"]
+          # project?
+          puts "  #{tid}: (#{project_name(pjid.to_s)}) #{wikiname}"
         when /^new/
           # draft for new ticket
           draftFile = "#{@options["cachedir"]}/edit/#{tid}.#{@serverconf["format"]}"
