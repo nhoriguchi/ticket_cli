@@ -46,7 +46,7 @@ module RedmineCmdEdit
           params = {"key" => @serverconf["token"]}
           response = __get_response(uri, params)["wiki_page"]
           # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
-          prepareDraft draftPath(id), draftWikiData(wikiname, response["text"])
+          prepareDraft draftPath(id), draftWikiData(wikiname, response["text"].gsub(/\r\n?/, "\n"))
         when "ticket"
           raise "issue #{id} not found" if @cacheData[id].nil?
           @cacheData[id] = updateCacheIssue id

@@ -130,7 +130,7 @@ module RedmineCmdWiki
       params = {"key" => @serverconf["token"]}
       response = __get_response(uri, params)["wiki_page"]
       # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
-      prepareDraft draftFile, draftWikiData(wikiname, response["text"])
+      prepareDraft draftFile, draftWikiData(wikiname, response["text"].gsub(/\r\n?/, "\n"))
       check_upload_draft draftFile
     rescue
       puts "Failed to download wikipage from server. so only local cache can be edittable."
