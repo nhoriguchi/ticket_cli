@@ -11,27 +11,38 @@ module RedmineCmdEdit
         @options[:allyes] = true
       end
       opts.on("-f file", "--file") do |f|
+        raise "File #{f} not found." if not File.exist? f
         @options[:inputfile] = f
       end
     end.order! args
 
     if args.size == 0
       raise "no ID given"
-    elsif args.size == 1 and @options[:inputfile]
-      id = args[0]
-      raise "issue #{id} not found" if @cacheData[id].nil?
-      begin
-        @cacheData[id] = updateCacheIssue id
-      rescue
-        puts "updateCacheIssue failed, maybe connection is temporary unavailable now."
+    elsif @options[:inputfile]
+      if args.size != 1
+        raise "When input file is given, you have to specify exactly one ID to be updated."
       end
+      id = args[0]
 
-      if @options[:inputfile]
+      case id_type id
+      when "wiki"
+        project = id.split("-")[0]
+        wikiname = get_wikiname id
+        puts "Wiki ID: #{id}, project: #{project}, wikiname: #{wikiname}"
+        uploadData = parseWikiDraftData @options[:inputfile]
+        uploadNewWiki project, wikiname, uploadData
+      when "ticket"
+        raise "issue #{id} not found" if @cacheData[id].nil?
+        begin
+          @cacheData[id] = updateCacheIssue id
+        rescue
+          puts "updateCacheIssue failed, maybe connection is temporary unavailable now."
+        end
         uploadInputfile id, @options[:inputfile]
         return
+      else
+        raise "invalid ID #{id}"
       end
-
-      edit_single_ticket id
     else
       # prepare drafts for each input
       args.each do |id|
