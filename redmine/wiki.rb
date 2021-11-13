@@ -54,7 +54,7 @@ module RedmineCmdWiki
 
   def list_wiki_pages args
     if args.size > 0
-      projs = args.map {|a| parse_projectspec(a)}
+      projs = args.map {|a| parse_projectspec(a).to_i}
     else
       # all projects
       projs = @metaCacheData["projects"].map {|pj| pj["id"]}
