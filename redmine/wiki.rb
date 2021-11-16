@@ -104,12 +104,18 @@ module RedmineCmdWiki
     raise "Usage: ticket wiki show <WikiID>" if args.size != 1
     wikiid = args[0]
     project = wikiid.split("-")[0]
-    updateWikiCache [project]
-    wikiname = @wikiCacheData[wikiid]["title"]
-    uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
-    params = {"key" => @serverconf["token"]}
-    response = __get_response(uri, params)["wiki_page"]
-    puts response["text"]
+    begin
+      updateWikiCache [project]
+      wikiname = @wikiCacheData[wikiid]["title"]
+      uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
+      params = {"key" => @serverconf["token"]}
+      response = __get_response(uri, params)["wiki_page"]
+      puts response["text"]
+      @wikiCacheData[wikiid]["data"] = response
+      wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
+      File.write(wikiCacheFile, @wikiCacheData.to_json)
+    rescue
+    end
   end
 
   def check_upload_draft draftFile
@@ -186,12 +192,20 @@ module RedmineCmdWiki
     @wikiCacheData = {} if @wikiCacheData.nil?
     params = {"key" => @serverconf["token"]}
     issueAPI = "#{@baseurl}/projects/#{proj}/wiki/index.json"
-    response = __get_response issueAPI, params
+    begin
+      response = __get_response issueAPI, params
+    rescue
+      return
+    end
     tmp = response["wiki_pages"].sort_by {|w| w["created_on"]}
     tmp.each_with_index do |w, i|
-      @wikiCacheData["#{proj}-#{i}"] = w
-      w["project_id"] = proj.to_i
-      w["wpid"] = "#{proj}-#{i}"
+      if @wikiCacheData["#{proj}-#{i}"].nil?
+        @wikiCacheData["#{proj}-#{i}"] = w
+        w["project_id"] = proj.to_i
+        w["wpid"] = "#{proj}-#{i}"
+      else
+        @wikiCacheData["#{proj}-#{i}"].merge! w
+      end
     end
   end
 

@@ -50,7 +50,13 @@ module RedmineCmdEdit
         when "wiki"
           puts "Wiki ID: #{id}"
           project = id.split("-")[0]
-          wikiname = get_wikiname id
+          begin
+            wikiname = get_wikiname id
+          rescue
+            puts "Failed to get wiki data from server maybe due to network connection."
+          end
+          # TODO: no connection
+          next if wikiname.nil?
 
           # TODO: need refactoring
           uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
@@ -60,7 +66,6 @@ module RedmineCmdEdit
           prepareDraft draftPath(id), draftWikiData(wikiname, response["text"].gsub(/\r\n?/, "\n"))
         when "ticket"
           raise "issue #{id} not found" if @cacheData[id].nil?
-          @cacheData[id] = updateCacheIssue id
           draftFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}"
           prepareDraft draftFile, draftIssueData(id, @cacheData[id])
         else
