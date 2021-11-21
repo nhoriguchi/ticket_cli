@@ -1,7 +1,6 @@
 # coding: utf-8
 
 require 'time'
-require 'diffy'
 
 module RedmineCmdShow
   def show args

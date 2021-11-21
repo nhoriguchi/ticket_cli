@@ -111,8 +111,9 @@ module RedmineCmdEdit
 
   def __uploadTicketDraft id, elapsed
     uploadData, duration = parseDraftData draftPath(id)
-    ret = system("diff -U3 #{draftOrigPath(id)} #{draftPath(id)} > /dev/null")
-    if ret == true
+    tmp = Diffy::Diff.new(File.read(draftOrigPath(id)), File.read(draftPath(id)), :context => 3).to_s.split("\n")
+    tmp.delete("\\ No newline at end of file")
+    if tmp.empty?
       puts "no change on draft file."
       return
     end
@@ -140,6 +141,24 @@ module RedmineCmdEdit
   end
 
   def __uploadWikiDraft id
+    tmp = Diffy::Diff.new(File.read(draftOrigPath(id)), File.read(draftPath(id)), :context => 3).to_s.split("\n")
+    tmp.delete("\\ No newline at end of file")
+    if tmp.empty?
+      puts "no change on draft file."
+      return
+    end
+
+    basediff = checkConflict id
+    if not basediff.empty?
+      open(draftPath(id), 'a') do |f|
+        f.puts ""
+        f.puts "### CONFLICT ### YOU NEED TO CONFLICET THE BELOW DIFF MANUALLY"
+        f.puts basediff
+      end
+      puts "conflict detected (#{id}), edit it again."
+      return
+    end
+
     project = id.split("-")[0]
     wikiname = get_wikiname(id)
     uploadData = parseWikiDraftData draftPath(id)
@@ -227,33 +246,41 @@ module RedmineCmdEdit
     return true
   end
 
-  def ask_action
-    if @options[:allyes] == true
-      return "upload"
-    else
-      puts "Current server target is #{@options[:server]}"
-      puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
-      input = STDIN.gets.chomp
-      if input[0] == 'n' or input[0] == 'N'
-        return "cancel"
-      elsif input[0] == 's' or input[0] == 'S'
-        return "save"
-      elsif input[0] == 'y' or input[0] == 'Y'
-        return "upload"
-      else
-        return "editagain"
-      end
+  # TODO: move
+  def prepareWikiDraft path, id
+    project = id.split("-")[0]
+    begin
+      wikiname = get_wikiname id
+    rescue
+      puts "Failed to get wiki data from server maybe due to network connection."
     end
+    # TODO: no connection
+    return 3 if wikiname.nil?
+
+    # TODO: need refactoring
+    uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}.json")
+    params = {"key" => @serverconf["token"]}
+    response = __get_response(uri, params)["wiki_page"]
+    # puts ">>> prepareDraft #{draftFile}, [#{response["text"]}]"
+    prepareDraft path, draftWikiData(wikiname, response["text"].gsub(/\r\n?/, "\n"))
   end
 
   def checkConflict id
     draftFileOrig = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.orig"
     conflictFile = "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.conflictcheck"
-    prepareDraft conflictFile, draftIssueData(id, updateCacheIssue(id))
+    case id_type id
+    when "wiki"
+      prepareWikiDraft conflictFile, id
+    when "ticket"
+      prepareDraft conflictFile, draftIssueData(id, updateCacheIssue(id))
+    else
+      raise
+    end
 
-    ret = `diff -U3 #{draftFileOrig} #{conflictFile}`
-    system "mv #{conflictFile} #{draftFileOrig}"
-    return ret
+    tmp = Diffy::Diff.new(File.read(draftFileOrig), File.read(conflictFile), :context => 3).to_s.split("\n")
+    tmp.delete("\\ No newline at end of file")
+    FileUtils.mv(conflictFile, draftFileOrig)
+    return tmp.join("\n")
   end
 
   def uploadIssue id, draftData

@@ -202,8 +202,12 @@ module RedmineCmdList
 
     prepareDraft draftFile, tmp
     ret = editDraft(draftFile)
-    ret = `diff -U1 #{draftFileOrig} #{draftFile} | grep ^+ | grep -v '^+++ '`
-    list_input ret.split("\n")
+
+    ret = Diffy::Diff.new(File.read(draftFileOrig), File.read(draftFile), :context => 1).to_s.split("\n")
+    ret.select! do |e|
+      e[0] == '+' and ( e !~ /^\+\+\+ / )
+    end
+    list_input ret
     cleanupDraft draftFile
   end
 

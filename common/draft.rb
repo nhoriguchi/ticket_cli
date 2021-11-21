@@ -16,8 +16,9 @@ module Common
     raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
     system "#{@options[:editor]} #{draftFile}"
     return if ! File.exist? draftFileOrig
-    ret = system("diff -U3 #{draftFileOrig} #{draftFile}")
-    if ret == true
+    tmp = Diffy::Diff.new(File.read(draftFileOrig), File.read(draftFile), :context => 3).to_s.split("\n")
+    tmp.delete("\\ No newline at end of file")
+    if tmp.empty?
       puts "no change on draft file."
       return false
     end
@@ -32,6 +33,10 @@ module Common
     "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.orig"
   end
 
+  def draftConflictPath id
+    "#{@options["cachedir"]}/edit/#{id}.#{@serverconf["format"]}.conflictcheck"
+  end
+
   def editDrafts ids
     raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
     puts "#{@options[:editor]} #{ids.map do |id| draftPath id ; end.join(" ")}"
@@ -42,9 +47,10 @@ module Common
     tmp = []
     ids.each do |id|
       tmp << "#################################### #{id} ####################################"
-      a = `diff -U3 -w #{draftOrigPath id} #{draftPath id} | grep -ve '^--- ' -e '^+++ '`
-      if ! a.empty?
-        tmp << a
+      tmpdiff = Diffy::Diff.new(File.read(draftOrigPath(id)), File.read(draftPath(id)), :context => 3).to_s.split("\n")
+      tmpdiff.delete("\\ No newline at end of file")
+      if ! tmpdiff.empty?
+        tmp << tmpdiff
       end
     end
     if tmp.empty?
@@ -316,5 +322,24 @@ module Common
     res["wiki_page"]["text"] = afterDescription.join("\n")
     res["wiki_page"]["comments"] = comment.join("\n") if ! comment.empty?
     return res
+  end
+
+  def ask_action
+    if @options[:allyes] == true
+      return "upload"
+    else
+      puts "Current server target is #{@options[:server]}"
+      puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
+      input = STDIN.gets.chomp
+      if input[0] == 'n' or input[0] == 'N'
+        return "cancel"
+      elsif input[0] == 's' or input[0] == 'S'
+        return "save"
+      elsif input[0] == 'y' or input[0] == 'Y'
+        return "upload"
+      else
+        return "editagain"
+      end
+    end
   end
 end

@@ -142,36 +142,26 @@ module RedmineCmdWiki
       puts "Failed to download wikipage from server. so only local cache can be edittable."
     end
 
+    asyncUpdateMetaCache
+
+    t1 = Time.now
     while true
-      editDraft draftFile
-      uploadData = parseWikiDraftData draftFile
-
-      if allyes == true
+      editDrafts args
+      diffDrafts args
+      action = ask_action
+      case action
+      when "upload"
+        uploadDrafts args, t1
         break
-      else
-        puts "You really upload this change? (y/Y: yes, n/N: no, s/S: save draft, e/E: edit again): "
-        input = STDIN.gets.chomp
-        if input[0] == 'n' or input[0] == 'N'
-          cleanupDraft draftFile
-          puts "Draft file is moved to #{@options["cachedir"]}/deleted_drafts/#{wikiid}.#{@serverconf["format"]}, if you accidentally cancel the edit, please restore your draft file from it."
-          return
-        elsif input[0] == 's' or input[0] == 'S'
-          return
-        elsif input[0] == 'y' or input[0] == 'Y'
-          true
-        else
-          next
-        end
+      when "cancel"
+        puts "Moved draft file(s) to #{@options["cachedir"]}/deleted_drafts"
+        cancelDrafts args
+        break
+      when "save"
+        saveDrafts args, t1
+        break
       end
-
-      @options[:logger].debug(uploadData)
-      response = uploadNewWiki project, wikiname, uploadData
-      break
     end
-
-    # TODO: 作業時間
-
-    cleanupDraft draftFile
   end
 
   def uploadNewWiki proj, wikiname, draftData

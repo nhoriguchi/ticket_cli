@@ -12,6 +12,7 @@ require 'pp'
 require 'yaml'
 require 'optparse'
 require 'logger'
+require 'diffy'
 
 class MainCommand
   @@config = "#{ENV['HOME']}/.ticket/config"
