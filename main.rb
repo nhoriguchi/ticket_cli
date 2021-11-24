@@ -95,7 +95,11 @@ class MainCommand
     when "redmine"
       require_relative "./redmine.rb"
 
-      redmine = Redmine.new @options, cmd, args
+      Redmine.new @options, cmd, args
+    when "growi"
+      require_relative "./growi.rb"
+
+      Growi.new @options, cmd, args
     else
       raise "invalid config #{tmp}"
     end

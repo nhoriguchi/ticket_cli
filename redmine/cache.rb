@@ -1,8 +1,6 @@
 # coding: utf-8
 
 module RedmineCache
-  private
-
   # update cache contents
   def updateCache
     cacheFile = @options["cachedir"] + "/cacheData"
