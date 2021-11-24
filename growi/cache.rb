@@ -7,7 +7,7 @@ module GrowiCache
   def updateCache
     cacheFile = @options["cachedir"] + "/cacheData"
 
-    res = `curl -s "#{@baseurl}/pages.list?path=/"`
+    res = `curl -s "#{@baseurl}/pages.list?path=/&limit=1000"`
     response = JSON.load(res)
     raise "fail" if response["ok"] != true
     pages = response["pages"]
