@@ -5,16 +5,27 @@ module RedmineCmdNew
     allyes = false
     inputfile = nil
     draftFile = nil
+    cliinput = {
+      :tracker => @serverconf["setting"]["defaulttracker"],
+      :parent => "null",
+    }
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$0} [-options]"
-      opts.on("-p", "--project") do
+      opts.on("-p project_spec", "--project") do |pjspec|
+        cliinput[:project] = pjspec
       end
-      opts.on("-P", "--parent") do
+      opts.on("-s 'subject'", "--subject") do |subject|
+        cliinput[:subject] = subject
       end
-      opts.on("-t", "--tracker") do
+      opts.on("-d 'description'", "--description") do |description|
+        cliinput[:description] = description
       end
-      opts.on("-s", "--subject") do
+      opts.on("-t tracker_spec", "--tracker") do |trspeck|
+        cliinput[:tracker] = trspeck
+      end
+      opts.on("-P parent_ticket_id", "--parent") do |pid|
+        cliinput[:parent] = pid
       end
       opts.on("-f file", "--file") do |f|
         inputfile = f
@@ -24,6 +35,11 @@ module RedmineCmdNew
       end
       # TODO: more options
     end.order! args
+
+    if cliinput[:project] and cliinput[:subject]
+      generateDraftFromParams cliinput
+      return
+    end
 
     if inputfile
       uploadNewInputfile inputfile
@@ -145,5 +161,24 @@ module RedmineCmdNew
       rescue
       end
     end
+  end
+
+  def generateDraftFromParams params
+    tmp = ["---"]
+    tmp << "Project: #{params[:project]}"
+    tmp << "Subject: #{params[:subject]}"
+    tmp << "Type: #{params[:tracker]}"
+    tmp << "Parent: #{params[:parent]}"
+    tmp << "EstimatedTime: 1"
+    tmp << "Status:"
+    tmp << "StartDate:"
+    tmp << "DueDate:"
+    tmp << "Assigned:"
+    tmp << "---"
+    tmp << "#{params[:description]}"
+    tmp << ""
+    draftFile = "/tmp/.new.#{@serverconf["format"]}"
+    File.write(draftFile, tmp.join("\n"))
+    uploadNewInputfile draftFile
   end
 end
