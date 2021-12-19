@@ -17,6 +17,10 @@ module RedmineCmdWiki
   show wiki page:
     ticket wiki show <WikiID>
 
+  show change history of wiki page:
+
+    ticket wiki log <WikiID>
+
   edit wiki page:
     ticket wiki edit <WikiID>
 
@@ -31,13 +35,14 @@ module RedmineCmdWiki
       list_wiki_pages args
     elsif wikicmd == "show"
       show_wiki_page args
+    elsif wikicmd == "log"
+      show_wiki_page_log args
     elsif wikicmd == "new"
       create_wiki_page args
     elsif wikicmd == "edit"
       edit_wiki_page args
     elsif wikicmd == "debug"
       updateWikiCache args
-      pp @wikiCacheData
     else
       raise "invalid subcommand: ticket wiki #{wikicmd}"
     end
@@ -235,5 +240,54 @@ module RedmineCmdWiki
       load_wiki_pages
     end
     File.write(wikiCacheFile, @wikiCacheData.to_json)
+  end
+
+  def collectWikiPageHistory wikiids=[]
+    wikiids.each do |wikiid|
+      __collectWikiPageHistory wikiid
+    end
+    wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
+    File.write(wikiCacheFile, @wikiCacheData.to_json)
+  end
+
+  def __collectWikiPageHistory wikiid
+    project = wikiid.split("-")[0]
+    if @wikiCacheData[wikiid]["history"].nil?
+      @wikiCacheData[wikiid]["history"] = {}
+    end
+    @wikiCacheData[wikiid]["version"].downto(1) do |i|
+      next if @wikiCacheData[wikiid]["history"][i.to_s]
+      getWikiPageOldVersion wikiid, project, i
+    end
+  end
+
+  def getWikiPageOldVersion wikiid, project, version
+    begin
+      wikiname = @wikiCacheData[wikiid]["title"]
+      uri = URI.encode("#{@baseurl}/projects/#{project}/wiki/#{wikiname}/#{version}.json")
+      params = {"key" => @serverconf["token"]}
+      response = __get_response(uri, params)["wiki_page"]
+      if @wikiCacheData[wikiid]["history"].nil?
+         @wikiCacheData[wikiid]["history"] = {}
+      end
+      @wikiCacheData[wikiid]["history"][version] = response
+    rescue
+    end
+  end
+
+  def show_wiki_page_log args
+    raise "Usage: ticket wiki log <WikiID>" if args.size != 1
+    wikiid = args[0]
+    project = wikiid.split("-")[0]
+    updateWikiCache [project]
+    collectWikiPageHistory [wikiid]
+    tmp = @wikiCacheData[wikiid]["history"]
+    @wikiCacheData[wikiid]["version"].downto(2) do |i|
+      puts "#" * 72
+      puts "Version: #{i} #{tmp[i.to_s]["updated_on"]}"
+      tmp3 = Diffy::Diff.new(tmp[(i-1).to_s]["text"], tmp[i.to_s]["text"], :context => 3, :include_diff_info => true).to_s.split("\n")
+      tmp3.delete("\\ No newline at end of file")
+      puts tmp3
+    end
   end
 end
