@@ -281,10 +281,15 @@ module RedmineCmdWiki
     project = wikiid.split("-")[0]
     updateWikiCache [project]
     collectWikiPageHistory [wikiid]
+    updateWikiCache [project]
     tmp = @wikiCacheData[wikiid]["history"]
     @wikiCacheData[wikiid]["version"].downto(2) do |i|
       puts "#" * 72
-      puts "Version: #{i} #{tmp[i.to_s]["updated_on"]}"
+      puts "Version: #{i}"
+      puts "Updated: #{tmp[i.to_s]["updated_on"]}"
+      if tmp[i.to_s]["comments"]
+        puts "Note: #{tmp[i.to_s]["comments"]}"
+      end
       tmp3 = Diffy::Diff.new(tmp[(i-1).to_s]["text"], tmp[i.to_s]["text"], :context => 3, :include_diff_info => true).to_s.split("\n")
       tmp3.delete("\\ No newline at end of file")
       puts tmp3
