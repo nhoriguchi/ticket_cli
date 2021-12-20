@@ -287,12 +287,13 @@ module RedmineCmdWiki
     collectWikiPageHistory [wikiid]
     updateWikiCache [project]
     tmp = @wikiCacheData[wikiid]["history"]
+    require 'colorize'
     @wikiCacheData[wikiid]["version"].downto(2) do |i|
       puts "#" * 72
-      puts "Version: #{i}"
-      puts "Updated: #{tmp[i.to_s]["updated_on"]}"
+      puts "Version: #{i}".yellow
+      puts "Updated: #{tmp[i.to_s]["updated_on"]}".yellow
       if tmp[i.to_s]["comments"]
-        puts "Note: #{tmp[i.to_s]["comments"]}"
+        puts "Note: #{tmp[i.to_s]["comments"]}".red
       end
       tmp3 = Diffy::Diff.new(tmp[(i-1).to_s]["text"], tmp[i.to_s]["text"], :context => 3, :include_diff_info => true).to_s.split("\n")
       tmp3.delete("\\ No newline at end of file")
