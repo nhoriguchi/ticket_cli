@@ -128,6 +128,8 @@ module RedmineCmdList
       # @cacheData = @cacheData.sort_by{|k, _| k.to_i}.to_h
     end
 
+    @drafts = find_saved_draft
+
     begin
       if @config[:listinput]
         raise "not implemented yet"
@@ -212,15 +214,15 @@ module RedmineCmdList
   end
 
   def list_id
-    get_format_list("%-4d %3d %-6s %-6s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "project.name", "relations", "subject"])
+    get_format_list("%-5s %3d %-6s %-6s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "project.name", "relations", "subject"])
   end
 
   def list_update_date
-    get_format_list("%-4d %3d %-6s %-6s %s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "updated_on", "project.name", "relations", "subject"])
+    get_format_list("%-5s %3d %-6s %-6s %s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "updated_on", "project.name", "relations", "subject"])
   end
 
   def list_duedate
-    get_format_list("%-4d %3d %-6s %-6s %-10s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "relations", "subject"])
+    get_format_list("%-5s %3d %-6s %-6s %-10s (%s) %s%s", ["id", "done_ratio", "tracker.name", "status.name", "due_date", "project.name", "relations", "subject"])
   end
 
   def accessHash h, elms
@@ -240,6 +242,14 @@ module RedmineCmdList
     end
   end
 
+  def get_id_with_draft id
+    if @drafts.include? id
+      return "#{id}*"
+    else
+      return "#{id}"
+    end
+  end
+
   def get_format_list fmt, columns
     tmp = @keys.map do |k|
       fmt % columns.map do |cl|
@@ -250,6 +260,12 @@ module RedmineCmdList
             ""
           else
             "[#{@cacheData[k][cl].map {|rel| rel_short_string(k, rel)}.join(",")}] "
+          end
+        elsif cl == "id"
+          if @drafts.include? k
+            "#{k}*"
+          else
+            k
           end
         else
           accessHash(@cacheData[k], cl.split("."))

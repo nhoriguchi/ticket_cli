@@ -31,6 +31,8 @@ module RedmineCmdWiki
 
     wikicmd = args.shift
 
+    @drafts = find_saved_draft
+
     if wikicmd == "list"
       list_wiki_pages args
     elsif wikicmd == "show"
@@ -213,7 +215,9 @@ module RedmineCmdWiki
   def print_wiki_pages wikis
     puts "WikiID\tVersion\tupdated_on\tWikiTitle"
     wikis.each do |wiki|
-      puts "#{wiki["wpid"]}\t#{wiki["version"]}\t#{Time.parse(wiki["updated_on"]).getlocal.strftime("%Y/%m/%d %H:%M")}\t#{wiki["title"]}"
+      draftmark = ""
+      draftmark = '*' if @drafts.include?(wiki["wpid"])
+      puts "#{wiki["wpid"]}#{draftmark}\t#{wiki["version"]}\t#{Time.parse(wiki["updated_on"]).getlocal.strftime("%Y/%m/%d %H:%M")}\t#{wiki["title"]}"
     end
   end
 
