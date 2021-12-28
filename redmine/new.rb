@@ -18,7 +18,7 @@ module RedmineCmdNew
       opts.on("-s 'subject'", "--subject") do |subject|
         cliinput[:subject] = subject
       end
-      opts.on("-d 'description'", "--description") do |description|
+      opts.on("-D 'description'", "--description") do |description|
         cliinput[:description] = description
       end
       opts.on("-t tracker_spec", "--tracker") do |trspeck|
