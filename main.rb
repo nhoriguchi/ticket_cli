@@ -100,6 +100,10 @@ class MainCommand
       require_relative "./growi.rb"
 
       Growi.new @options, cmd, args
+    when "gitlab"
+      require_relative "./gitlab/main.rb"
+
+      GitLab.new @options, cmd, args
     else
       raise "invalid config #{tmp}"
     end

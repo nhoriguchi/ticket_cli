@@ -126,7 +126,7 @@ module RedmineCmdNew
     editdata << "StartDate: "
     editdata << "DueDate: "
     editdata << "Parent: null"
-    editdata << "Assigned: null" if @serverconf["setting"]["userlist"] == true
+    # editdata << "Assigned: null" if @serverconf["setting"]["userlist"] == true
     editdata << "Duration:"
     editdata << "Progress: 0"
     editdata << "---"
@@ -173,7 +173,7 @@ module RedmineCmdNew
     tmp << "Status:"
     tmp << "StartDate:"
     tmp << "DueDate:"
-    tmp << "Assigned:"
+    # tmp << "Assigned:"
     tmp << "---"
     tmp << "#{params[:description]}"
     tmp << ""

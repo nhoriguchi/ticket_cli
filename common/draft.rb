@@ -13,7 +13,7 @@ module Common
   def editDraft path
     draftFile = path
     draftFileOrig = path + ".orig"
-    raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
+    # raise "editor #{@options[:editor]} not found" # if not File.exist? @options[:editor]
     system "#{@options[:editor]} #{draftFile}"
     return if ! File.exist? draftFileOrig
     tmp = Diffy::Diff.new(File.read(draftFileOrig), File.read(draftFile), :context => 3).to_s.split("\n")
@@ -38,7 +38,7 @@ module Common
   end
 
   def editDrafts ids
-    raise "editor #{@options[:editor]} not found" if not File.exist? @options[:editor]
+    # raise "editor #{@options[:editor]} not found" # if not File.exist? @options[:editor]
     puts "#{@options[:editor]} #{ids.map do |id| draftPath id ; end.join(" ")}"
     system "#{@options[:editor]} #{ids.map do |id| draftPath id ; end.join(" ")}"
   end
