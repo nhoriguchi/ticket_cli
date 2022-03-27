@@ -27,10 +27,10 @@ module RedmineCmdNew
       opts.on("-P parent_ticket_id", "--parent") do |pid|
         cliinput[:parent] = pid
       end
-      opts.on("-f file", "--file") do |f|
+      opts.on("-f file", "--file", "upload given draft file directly to Redmine server.") do |f|
         inputfile = f
       end
-      opts.on("-d draftFile", "--draftfile") do |f|
+      opts.on("-d draftFile", "--draftfile", "restart editing with given draft.") do |f|
         draftFile = f
       end
       # TODO: more options

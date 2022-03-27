@@ -146,7 +146,8 @@ module RedmineCmdList
         puts list_update_date
         show_wiki_section projs
       end
-    rescue
+    rescue => e
+      p e
     end
   end
 
@@ -243,7 +244,7 @@ module RedmineCmdList
   end
 
   def get_id_with_draft id
-    if @drafts.include? id
+    if @drafts.include? id && @config[:edit] == false
       return "#{id}*"
     else
       return "#{id}"
@@ -262,11 +263,7 @@ module RedmineCmdList
             "[#{@cacheData[k][cl].map {|rel| rel_short_string(k, rel)}.join(",")}] "
           end
         elsif cl == "id"
-          if @drafts.include? k
-            "#{k}*"
-          else
-            k
-          end
+          get_id_with_draft(k)
         else
           accessHash(@cacheData[k], cl.split("."))
         end

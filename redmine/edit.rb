@@ -10,7 +10,7 @@ module RedmineCmdEdit
       opts.on("--all-yes") do
         @options[:allyes] = true
       end
-      opts.on("-f file", "--file") do |f|
+      opts.on("-f file", "--file", "updated ticket/wiki with given draftfile.") do |f|
         raise "File #{f} not found." if not File.exist? f
         @options[:inputfile] = f
       end
@@ -169,10 +169,12 @@ module RedmineCmdEdit
 
   # この条件はかなり雑
   def id_type str
-    if str =~ /-/
+    if str =~ /^\d+-\d+$/
       return "wiki"
-    else
+    elsif str =~ /^\d+$/
       return "ticket"
+    else
+      return "new"
     end
   end
 

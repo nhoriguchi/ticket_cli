@@ -29,6 +29,7 @@ module RedmineCmdStatus
         case tid
         when /^\d+-\d+$/
           updateWikiCache
+          next if @wikiCacheData[tid].nil?
           wikiname = @wikiCacheData[tid]["title"]
           pjid = @wikiCacheData[tid]["project_id"]
           # project?

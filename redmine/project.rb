@@ -11,6 +11,8 @@ module RedmineCmdProject
       end
     end.order! args
 
+    updateMetaCache true
+
     if @config[:tree] == true
       p get_project_tree
     else

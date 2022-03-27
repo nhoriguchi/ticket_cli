@@ -46,6 +46,7 @@ module Common
   def diffDrafts ids
     tmp = []
     ids.each do |id|
+      next if id_type(id) == "new"
       tmp << "#################################### #{id} ####################################"
       tmpdiff = Diffy::Diff.new(File.read(draftOrigPath(id)), File.read(draftPath(id)), :context => 3).to_s.split("\n")
       tmpdiff.delete("\\ No newline at end of file")
@@ -104,8 +105,6 @@ module Common
         if line == "---"
           metaline = 2
           comment_part = false
-        elsif line =~ /^#/
-          # skip comment line
         elsif line =~ /^@@@/
           comment_part = true
         elsif comment_part == true
@@ -185,8 +184,6 @@ module Common
         if line == "---"
           metaline = 2
           comment_part = false
-        elsif line =~ /^#/
-        # skip comment line
         elsif line =~ /^@@@/
           comment_part = true
         end
@@ -222,8 +219,6 @@ module Common
       elsif metaline == 1
         if line == "---"
           return 0
-        elsif line =~ /^#/
-        # skip comment line
         elsif line =~ /^@@@/
           return 0
         end
@@ -294,8 +289,6 @@ module Common
         if line == "---"
           metaline = 2
           comment_part = false
-        elsif line =~ /^#/
-          # skip comment line
         elsif line =~ /^@@@/
           comment_part = true
         elsif comment_part == true
