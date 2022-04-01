@@ -104,6 +104,10 @@ class MainCommand
       require_relative "./gitlab/main.rb"
 
       GitLab.new @options, cmd, args
+    when "github"
+      require_relative "./github/main.rb"
+
+      GitHub.new @options, cmd, args
     else
       raise "invalid config #{tmp}"
     end
