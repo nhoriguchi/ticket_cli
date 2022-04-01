@@ -2,25 +2,33 @@
 
 module GitLabCmdEdit
   def edit args
-    id = args[0]
-    pjid, iid, nid = id.split("-")
+    args.each do |id|
+      # id = args[0]
+      pjid, iid, nid = id.split("-")
 
-    # new issue
-    if iid.nil?
-      draftFile = "#{@options["cachedir"]}/edit/#{id}.md"
-      draftData = draftIssueData("#{id}", {}, nil)
-      prepareDraft draftFile, draftData
-    else
-      updateSingleNoteCache id
+      case id_type id
+      when "new"
+        draftFile = "#{@options["cachedir"]}/edit/#{id}.md"
+        draftData = draftIssueData("#{id}", {}, nil)
+        prepareDraft draftFile, draftData
+      when "ticket"
+        updateSingleNoteCache id
 
-      issue = @cacheData[pjid][iid]
-      if nid
-        note = @noteCacheData[pjid][iid]
+        issue = @cacheData[pjid][iid]
+        note = @noteCacheData[pjid][iid] if nid
+        draftData = draftIssueData("#{id}", issue, note)
+        draftFile = "#{@options["cachedir"]}/edit/#{id}.md"
+        prepareDraft draftFile, draftData
+      when "wiki"
+        updateSingleWikiCache pjid
+        wikiIdx = iid[1..].to_i
+        # wiki = @wikiCacheData[pjid][wikiIdx]
+        # wikiAPI = "#{@baseurl}/projects/#{pjid}/wikis/#{wiki["slug"]}"
+        # wiki = __get_response wikiAPI, {}
+        wiki = @wikiCacheData[pjid][wikiIdx]
+        draftFile = "#{@options["cachedir"]}/edit/#{id}.md"
+        prepareDraft draftFile, draftWikiData(wiki["title"], wiki["content"])
       end
-
-      draftFile = "#{@options["cachedir"]}/edit/#{id}.md"
-      draftData = draftIssueData("#{id}", issue, note)
-      prepareDraft draftFile, draftData
     end
 
     t1 = Time.now
@@ -44,12 +52,14 @@ module GitLabCmdEdit
   end
 
   def id_type str
-    if str =~ /^\d+-\d+/
-      return "ticket"
-    elsif str =~ /^\d+$/
-      return "ticket"
-    else
+    if str =~ /^\d+$/
       return "new"
+    elsif str =~ /^\d+-\d+/
+      return "ticket"
+    elsif str =~ /^\d+-w\d+/
+      return "wiki"
+    else
+      return "ticket"
     end
   end
 
@@ -62,6 +72,26 @@ module GitLabCmdEdit
         __uploadTicketDraft id, ((t2 - t1).to_i / 60)
       end
     end
+  end
+
+  def __uploadWikiDraft id
+    tmp = Diffy::Diff.new(File.read(draftOrigPath(id)), File.read(draftPath(id)), :context => 3).to_s.split("\n")
+    tmp.delete("\\ No newline at end of file")
+    if tmp.empty?
+      puts "no change on draft file."
+      return
+    end
+
+    # TODO: checkConflict id
+
+    pjid, iid, nid = id.split("-")
+    project = id.split("-")[0]
+    uploadData = parseWikiDraft draftPath(id)
+    pp uploadData
+    wikiIdx = iid[1..].to_i
+    wiki = @wikiCacheData[pjid][wikiIdx]
+    response = uploadWiki pjid, wiki["slug"], uploadData
+    cleanupDraft draftPath(id)
   end
 
   def __uploadTicketDraft id, elapsed
@@ -128,12 +158,31 @@ module GitLabCmdEdit
     end
   end
 
+  def uploadWiki proj, wikiname, draftData
+    uri = URI.parse("#{@baseurl}/projects/#{proj}/wikis/#{wikiname}")
+    response = put_issue uri, draftData
+
+    case response
+    when Net::HTTPSuccess, Net::HTTPRedirection
+      puts "upload done"
+    else
+      raise response.value
+    end
+    return response
+  end
+
   def draftIssueData id, data, note
     pjid, iid, nid = id.split("-")
     editdata = []
     editdata << "---"
     editdata << "Subject: #{data["title"]}"
+    editdata << "State: #{data["state"]}"
     editdata << "Type: #{data["type"]}"
+    editdata << "Web URL: #{data["web_url"]}"
+    created = Time.parse(data["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
+    editdata << "Created at #{created}"
+    updated = Time.parse(data["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
+    editdata << "Updated at #{updated}"
     if data["time_stats"]
       editdata << "EstimatedTime: #{data["time_stats"]["time_estimate"]}"
       editdata << "SpentTime: #{data["time_stats"]["total_time_spent"]}"
@@ -142,7 +191,7 @@ module GitLabCmdEdit
     editdata << "Duration:"
     editdata << "@@@ lines from here to next '---' line is considered as note/comment"
     if note
-      editdata << note["body"] #.gsub(/\r\n?/, "\n")
+      editdata << note["body"]
     end
     editdata << "---"
     if data["description"]
@@ -208,5 +257,63 @@ module GitLabCmdEdit
     end
 
     return res, note
+  end
+
+  def draftWikiData title, data, meta={}
+    editdata = []
+    editdata << "---"
+    editdata << "Subject: #{title}"
+    meta.each do |k, v|
+      editdata << "#{k}: #{v}"
+    end
+    editdata << "@@@ lines from here to next '---' line is considered as note/comment"
+    editdata << "---"
+    editdata << data
+    editdata << ""
+    return editdata.join("\n")
+  end
+
+  def parseWikiDraft draftFile
+    afterEdit = File.read(draftFile).split("\n")
+    afterMeta = []
+    afterDescription = []
+    metaline = 0
+    comment_part = false
+    comment = []
+
+    afterEdit.each do |line|
+      if metaline == 0
+        if line == "---"
+          metaline = 1
+        else
+          afterDescription << line
+        end
+      elsif metaline == 1
+        if line == "---"
+          metaline = 2
+          comment_part = false
+        elsif line =~ /^@@@/
+          comment_part = true
+        elsif comment_part == true
+          comment << line
+        else
+          afterMeta << line
+        end
+      else
+        afterDescription << line
+      end
+    end
+
+    res = {"format": "markdown"}
+    res["content"] = afterDescription.join("\n")
+
+    afterMeta.each do |line|
+      case line
+      when /^subject:\s*(.*?)\s*$/i
+        res["title"] = $1
+      end
+    end
+
+    return res
   end
 end

@@ -14,7 +14,6 @@ module GitLabCache
     File.write(metaCacheFile, @metaCacheData.to_json)
   end
 
-  # https://docs.gitlab.com/ee/api/projects.html
   def createMetaCache
     params = {
       # TODO: all
@@ -169,5 +168,29 @@ module GitLabCache
       end
     end
     return cacheData
+  end
+
+  def updateWikiCache
+    wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
+    if FileTest.exist? wikiCacheFile
+      @wikiCacheData = JSON.parse(File.read(wikiCacheFile))
+      # wikiCacheData, updated = updateLatestWikiCache(wikiCacheData)
+      return # if updated == false
+    else
+      FileUtils.mkdir_p(@options["cachedir"])
+      # @wikiCacheData = wikiCacheData = createFullWikiCache
+      @wikiCacheData = {}
+    end
+
+    File.write(wikiCacheFile, @wikiCacheData.to_json)
+  end
+
+  def updateSingleWikiCache pjid
+    wikisAPI = "#{@baseurl}/projects/#{pjid}/wikis"
+    wikis = __get_response wikisAPI, {"with_content" => 1}
+    @wikiCacheData[pjid] = wikis
+
+    wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
+    File.write(wikiCacheFile, @wikiCacheData.to_json)
   end
 end

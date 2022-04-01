@@ -39,9 +39,8 @@ class GitLab
   def initialize options, cmd, args
     @options = options
     @serverconf = @options['servers'][@options[:server]]
-    # pp @serverconf
 
-    if @options["baseport"].to_i == 443
+    if @serverconf["baseport"].to_i == 443
       @baseurl = "https://#{@serverconf["baseurl"]}/#{@serverconf["baseapi"]}"
     else
       @baseurl = "http://#{@serverconf["baseurl"]}:#{@serverconf["baseport"]}/#{@serverconf["baseapi"]}"
@@ -62,6 +61,7 @@ class GitLab
       puts "updateNoteCache failed, maybe connection is temporary unavailable now."
     end
     @options[:logger].debug("note cache update done")
+    updateWikiCache
 
     if cmd == "list"
       list args

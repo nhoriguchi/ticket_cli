@@ -32,7 +32,7 @@ module GitLabConnection
     uri.query = URI.encode_www_form(params)
 
     response = nil
-    if @options["baseport"].to_i == 443
+    if @serverconf["baseport"].to_i == 443
       require 'openssl'
       verify = OpenSSL::SSL::VERIFY_PEER
       verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
@@ -72,7 +72,7 @@ module GitLabConnection
   end
 
   def put_issue uri, data
-    if @options["baseport"].to_i == 443
+    if @serverconf["baseport"].to_i == 443
       verify = OpenSSL::SSL::VERIFY_PEER
       verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
 
@@ -81,7 +81,7 @@ module GitLabConnection
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Put.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
@@ -89,7 +89,7 @@ module GitLabConnection
       Net::HTTP.start(uri.host, uri.port) do |http|
         request = Net::HTTP::Put.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
@@ -97,7 +97,7 @@ module GitLabConnection
   end
 
   def post_issue uri, data
-    if @options["baseport"].to_i == 443
+    if @serverconf["baseport"].to_i == 443
       verify = OpenSSL::SSL::VERIFY_PEER
       verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
 
@@ -106,7 +106,7 @@ module GitLabConnection
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Post.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
@@ -114,7 +114,7 @@ module GitLabConnection
       Net::HTTP.start(uri.host, uri.port) do |http|
         request = Net::HTTP::Post.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
@@ -122,7 +122,7 @@ module GitLabConnection
   end
 
   def post_time_entry uri, data
-    if @options["baseport"].to_i == 443
+    if @serverconf["baseport"].to_i == 443
       verify = OpenSSL::SSL::VERIFY_PEER
       verify = OpenSSL::SSL::VERIFY_NONE if @options[:insecure]
 
@@ -131,7 +131,7 @@ module GitLabConnection
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Post.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
@@ -139,7 +139,7 @@ module GitLabConnection
       Net::HTTP.start(uri.host, uri.port) do |http|
         request = Net::HTTP::Post.new(uri.to_s)
         request.set_content_type("application/json")
-        request["X-Redmine-API-Key"] = @serverconf["token"]
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         request.body = data.to_json
         response = http.request request
       end
