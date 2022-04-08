@@ -17,17 +17,21 @@ module RedmineCmdShow
     end.order! args
 
     id = args[0]
-    raise "issue #{id} not found" if @cacheData[id].nil?
-    @cacheData[id] = updateCacheIssue id
+    case id_type id
+    when "ticket"
+      raise "issue #{id} not found" if @cacheData[id].nil?
+      @cacheData[id] = updateCacheIssue id
 
-    puts draftIssueData(id, @cacheData[id])
+      puts draftIssueData(id, @cacheData[id])
 
-    if journal == true
-      @separator = '@' * 72
-      puts @separator
-      show_journals id
+      if journal == true
+        @separator = '@' * 72
+        puts @separator
+        show_journals id
+      end
+    when "wiki"
+      show_wiki_page [id]
     end
-
     saveCache
   end
 
