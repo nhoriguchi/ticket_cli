@@ -104,8 +104,8 @@ module GitHubCache
   def createFullCache
     params = {}
     cacheData = {}
-    @metaCacheData["repos"].keys.each do |pjid|
-      issueAPI = "#{@baseurl}/repos/#{@metaCacheData["repos"][pjid]["full_name"]}/issues"
+    @metaCacheData["reposid"].keys.each do |pjid|
+      issueAPI = "#{@baseurl}/repos/#{@metaCacheData["reposid"][pjid]["full_name"]}/issues"
       issues = __get_response issueAPI, params
 
       cacheData[pjid.to_s] = {}

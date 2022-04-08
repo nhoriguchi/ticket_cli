@@ -8,6 +8,8 @@ module GitHubCmdList
     projs = args
     proj = args[0]
 
+    raise "no project name (username/repositoryname) given" if args.size == 0
+
     updateSingleMetaCache proj
     updateSingleCache proj
 
