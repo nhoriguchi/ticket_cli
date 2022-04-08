@@ -66,10 +66,13 @@ module GitLabCmdEdit
   def uploadDrafts ids, t1
     t2 = Time.now
     ids.each do |id|
-      if id_type(id) == "wiki"
+      case id_type(id)
+      when "wiki"
         __uploadWikiDraft id
-      elsif id_type(id) == "ticket"
+      when "ticket"
         __uploadTicketDraft id, ((t2 - t1).to_i / 60)
+      when "new"
+        __uploadNewIssueDraft id
       end
     end
   end
@@ -119,6 +122,13 @@ module GitLabCmdEdit
     # puts "created time_entry (#{duration} min) to ID #{id}"
 
     # update succeeded so clean up draft files
+    cleanupDraft draftPath(id)
+  end
+
+  def __uploadNewIssueDraft id
+    uploadData, comment = parseDraft draftPath(id)
+    uploadData["private_token"] = @serverconf["token"]
+    uploadIssue id, uploadData
     cleanupDraft draftPath(id)
   end
 
@@ -179,10 +189,14 @@ module GitLabCmdEdit
     editdata << "State: #{data["state"]}"
     editdata << "Type: #{data["type"]}"
     editdata << "Web URL: #{data["web_url"]}"
-    created = Time.parse(data["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
-    editdata << "Created at #{created}"
-    updated = Time.parse(data["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
-    editdata << "Updated at #{updated}"
+    if data["created_at"]
+      created = Time.parse(data["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
+      editdata << "Created at #{created}"
+    end
+    if data["updated_at"]
+      updated = Time.parse(data["updated_at"]).strftime("%Y-%m-%d %H:%M:%S")
+      editdata << "Updated at #{updated}"
+    end
     if data["time_stats"]
       editdata << "EstimatedTime: #{data["time_stats"]["time_estimate"]}"
       editdata << "SpentTime: #{data["time_stats"]["total_time_spent"]}"

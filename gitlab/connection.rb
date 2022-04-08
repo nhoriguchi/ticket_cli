@@ -50,7 +50,7 @@ module GitLabConnection
       end
     end
 
-    raise "http request failed." if response.code != "200"
+    raise "http request failed. (#{api}, #{response.code})" if response.code != "200"
     return JSON.load(response.body)
   end
 

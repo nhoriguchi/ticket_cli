@@ -187,8 +187,16 @@ module GitLabCache
 
   def updateSingleWikiCache pjid
     wikisAPI = "#{@baseurl}/projects/#{pjid}/wikis"
-    wikis = __get_response wikisAPI, {"with_content" => 1}
-    @wikiCacheData[pjid] = wikis
+    params = {
+      "private_token" => @serverconf["token"],
+      "with_content" => 1,
+    }
+    begin
+      wikis = __get_response wikisAPI, params
+      @wikiCacheData[pjid] = wikis
+    rescue
+      @wikiCacheData[pjid] = {}
+    end
 
     wikiCacheFile = @options["cachedir"] + "/wikiCacheData"
     File.write(wikiCacheFile, @wikiCacheData.to_json)
