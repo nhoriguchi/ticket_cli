@@ -41,11 +41,13 @@ module GitLabConnection
                       :use_ssl => uri.scheme == 'https',
                       :verify_mode => verify) do |http|
         request = Net::HTTP::Get.new uri
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         response = http.request request
       end
     else # for http connection
       Net::HTTP.start(uri.host, uri.port) do |http|
         request = Net::HTTP::Get.new(uri.to_s)
+        request["PRIVATE-TOKEN"] = @serverconf["token"]
         response = http.request request
       end
     end

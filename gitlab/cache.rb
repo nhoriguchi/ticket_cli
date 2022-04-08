@@ -41,6 +41,7 @@ module GitLabCache
       "limit" => 100,
       "last_activity_after" => (max + 1).iso8601(0),
       "private_token" => @serverconf["token"],
+      "visibility" => "private",
     }
 
     a = __get_response "#{@baseurl}/projects", params
